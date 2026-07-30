@@ -106,8 +106,10 @@
     accent, `#ff3b3b`) deployed via `.github/workflows/pages.yml`, mirroring the real
     `AxeForging/rsvp-m5` Pages pattern (`configure-pages`/`upload-pages-artifact`/
     `deploy-pages`). Screenshot-verified locally before commit.
-  - Not yet done: the public `github.com/AxeForging/heyra` repo itself — everything above is
-    built and committed locally, pushing it live is the last step.
+  - **Live**: `github.com/AxeForging/heyra` (public) and `https://axeforging.github.io/heyra/`
+    (Pages, `build_type: workflow`, deployed successfully on first push, verified reachable
+    with a real `curl`). Final secrets check re-run immediately before the push (clean, no
+    real credentials ever committed, confirmed via `git log --all`).
 - Phase 4 (calibration) — not started.
 
 ## Frozen contract: UDP audio packet format
