@@ -35,7 +35,8 @@ async def main() -> None:
     }
     room_lookup = dict(config.units)
     all_events = dict(config.events)
-    all_events[config.keyword_spotting.event.name] = config.keyword_spotting.event
+    for kw in config.keyword_spotting:
+        all_events[kw.event.name] = kw.event
 
     executor = ThreadPoolExecutor(max_workers=os.cpu_count() or 4)
     hit_queue: asyncio.Queue[Hit] = asyncio.Queue()
@@ -63,13 +64,15 @@ async def main() -> None:
     ]
     for unit in units.values():
         tasks.append(asyncio.create_task(classify_unit_loop(unit, yamnet_model, executor, hit_queue, config.events)))
-        if config.keyword_spotting.enabled:
-            spotter = KeywordSpotter(config.keyword_spotting.model_path, config.keyword_spotting.inference_framework)
-            tasks.append(
-                asyncio.create_task(
-                    keyword_unit_loop(unit, spotter, executor, hit_queue, config.keyword_spotting.event)
-                )
-            )
+        for kw in config.keyword_spotting:
+            if not kw.enabled:
+                continue
+            if not os.path.exists(kw.model_path):
+                log.warning("keyword model for '%s' not found at %s, skipping -- see docs/wake-word-training.md",
+                            kw.event.name, kw.model_path)
+                continue
+            spotter = KeywordSpotter(kw.model_path, kw.inference_framework)
+            tasks.append(asyncio.create_task(keyword_unit_loop(unit, spotter, executor, hit_queue, kw.event)))
     if config.debug.enabled:
         tasks.append(asyncio.create_task(debug_wav_loop(units, config.debug.output_dir, config.debug.rotate_seconds)))
         log.warning("debug WAV capture enabled -- writing rolling audio to %s", config.debug.output_dir)

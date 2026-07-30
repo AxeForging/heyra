@@ -22,10 +22,11 @@ classify:
       hysteresis: {hits: 1, window_s: 1}
       cooldown_s: 60
 keyword_spotting:
-  model_path: /app/models/openwakeword/hey_jarvis_v0.1.tflite
-  threshold: 0.9
-  hysteresis: {hits: 2, window_s: 10}
-  cooldown_s: 60
+  - event_name: distress_keyword
+    model_path: /app/models/openwakeword/hey_jarvis_v0.1.tflite
+    threshold: 0.9
+    hysteresis: {hits: 2, window_s: 10}
+    cooldown_s: 60
 """
 
 
@@ -69,6 +70,18 @@ overrides:
         load_config(path)
 
 
+def test_keyword_spotting_list_parses_provisional_entries():
+    # help_en/socorro_pt are provisional (no trained model file yet, see
+    # config.yaml) but must still parse and get a gate rule -- they only get
+    # skipped at spotter-startup (main.py) and discovery-publish (mqtt_out.py)
+    # time, not at config-parse time.
+    cfg = load_config(str(REAL_CONFIG_PATH))
+    names = {kw.event.name for kw in cfg.keyword_spotting}
+    assert names == {"distress_keyword", "help_en", "socorro_pt"}
+    assert cfg.gate_rules[(1, "help_en")].hits == 2
+    assert cfg.gate_rules[(1, "socorro_pt")].hits == 2
+
+
 def test_scream_split_from_shout_in_real_config():
     # Regression guard for the shout/scream split: class index 11 ("Screaming")
     # must belong to scream only, not double-counted in shout.
@@ -93,10 +106,11 @@ classify:
       hysteresis: {hits: 1, window_s: 1}
       cooldown_s: 60
 keyword_spotting:
-  model_path: /app/models/openwakeword/hey_jarvis_v0.1.tflite
-  threshold: 0.9
-  hysteresis: {hits: 2, window_s: 10}
-  cooldown_s: 60
+  - event_name: distress_keyword
+    model_path: /app/models/openwakeword/hey_jarvis_v0.1.tflite
+    threshold: 0.9
+    hysteresis: {hits: 2, window_s: 10}
+    cooldown_s: 60
 """
     path = write_yaml(tmp_path, text)
     with pytest.raises(ConfigError):

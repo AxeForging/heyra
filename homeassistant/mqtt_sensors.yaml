@@ -107,6 +107,35 @@ mqtt:
       payload_not_available: "offline"
       device: {identifiers: ["heyra_kitchen"], name: "Heyra Kitchen", manufacturer: "Heyra"}
 
+    # [PROVISIONAL] help_en/socorro_pt: no trained model exists yet, so real
+    # discovery (mqtt_out.py) withholds these entities until one is dropped
+    # in -- see docs/wake-word-training.md. Included here anyway since this
+    # file's purpose is "what discovery creates," and these will be created
+    # automatically once the models exist, no config change needed.
+    - name: "Kitchen Help (English)"
+      unique_id: heyra_kitchen_help_en
+      state_topic: "acoustic/kitchen/event"
+      value_template: "{{ 'ON' if value_json.event == 'help_en' else this.state }}"
+      payload_on: "ON"
+      payload_off: "OFF"
+      off_delay: 60
+      availability_topic: "acoustic/kitchen/status"
+      payload_available: "online"
+      payload_not_available: "offline"
+      device: {identifiers: ["heyra_kitchen"], name: "Heyra Kitchen", manufacturer: "Heyra"}
+
+    - name: "Kitchen Socorro (Portuguese)"
+      unique_id: heyra_kitchen_socorro_pt
+      state_topic: "acoustic/kitchen/event"
+      value_template: "{{ 'ON' if value_json.event == 'socorro_pt' else this.state }}"
+      payload_on: "ON"
+      payload_off: "OFF"
+      off_delay: 60
+      availability_topic: "acoustic/kitchen/status"
+      payload_available: "online"
+      payload_not_available: "offline"
+      device: {identifiers: ["heyra_kitchen"], name: "Heyra Kitchen", manufacturer: "Heyra"}
+
   sensor:
     - name: "Kitchen Status"
       unique_id: heyra_kitchen_status

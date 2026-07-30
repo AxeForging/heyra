@@ -74,7 +74,7 @@ class Config:
     yamnet_model_path: str
     yamnet_class_map_path: str
     events: dict[str, EventConfig]  # YAMNet events, name -> config (defaults, pre-override)
-    keyword_spotting: KeywordSpottingConfig
+    keyword_spotting: list[KeywordSpottingConfig]  # one entry per wake-word model (distress_keyword, help_en, ...)
     gate_rules: dict[tuple[int, str], EventRule]  # (unit_id, event_name) -> resolved rule, post-override
 
 
@@ -168,19 +168,24 @@ def load_config(path: str) -> Config:
         for name, ev_raw in events_raw.items()
     }
 
-    kw_raw = _require(raw, "keyword_spotting", "config")
-    kw_event = _parse_event("distress_keyword", kw_raw, "keyword_spotting")
-    keyword_spotting = KeywordSpottingConfig(
-        enabled=bool(kw_raw.get("enabled", True)),
-        model_path=_require(kw_raw, "model_path", "keyword_spotting"),
-        inference_framework=kw_raw.get("inference_framework", "tflite"),
-        event=kw_event,
-    )
+    kw_list_raw = _require(raw, "keyword_spotting", "config")
+    keyword_spotting: list[KeywordSpottingConfig] = []
+    for kw_raw in kw_list_raw:
+        event_name = _require(kw_raw, "event_name", "keyword_spotting[]")
+        ctx = f"keyword_spotting.{event_name}"
+        kw_event = _parse_event(event_name, kw_raw, ctx)
+        keyword_spotting.append(KeywordSpottingConfig(
+            enabled=bool(kw_raw.get("enabled", True)),
+            model_path=_require(kw_raw, "model_path", ctx),
+            inference_framework=kw_raw.get("inference_framework", "tflite"),
+            event=kw_event,
+        ))
 
     overrides_raw = raw.get("overrides") or {}
     gate_rules: dict[tuple[int, str], EventRule] = {}
     all_events = dict(events)
-    all_events[keyword_spotting.event.name] = keyword_spotting.event
+    for kw in keyword_spotting:
+        all_events[kw.event.name] = kw.event
     for unit_id in units:
         unit_overrides = overrides_raw.get(unit_id, {})
         for name, base_cfg in all_events.items():

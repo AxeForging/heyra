@@ -82,17 +82,40 @@ classify:
       cooldown_s: 60
       diagnostics_only: true    # NEVER reaches acoustic/<room>/event
 
-# Stock placeholder wake word -- proves the pipeline works end-to-end, is NOT a
-# trained "help help" model. See CLAUDE.md / docs/build-plan.md Phase 2 note.
+# One entry per wake-word model. distress_keyword is a stock placeholder --
+# proves the pipeline works end-to-end, is NOT a trained "help help" model
+# (see CLAUDE.md / docs/build-plan.md Phase 2 note). help_en/socorro_pt point
+# at model files that don't exist yet -- the listener logs a one-line warning
+# and skips them at startup (no crash), and mqtt_out.py withholds their HA
+# discovery entity until a real model is dropped in. See
+# docs/wake-word-training.md for the actual training runbook.
 keyword_spotting:
-  enabled: true
-  model_path: /app/models/openwakeword/hey_jarvis_v0.1.tflite
-  inference_framework: tflite
-  threshold: 0.90
-  hysteresis: {hits: 2, window_s: 10}
-  cooldown_s: 60
-  event_name: distress_keyword
-  diagnostics_only: false
-  ha: {off_delay_s: 60}
+  - event_name: distress_keyword
+    enabled: true
+    model_path: /app/models/openwakeword/hey_jarvis_v0.1.tflite
+    inference_framework: tflite
+    threshold: 0.90
+    hysteresis: {hits: 2, window_s: 10}
+    cooldown_s: 60
+    diagnostics_only: false
+    ha: {off_delay_s: 60}
+  - event_name: help_en
+    enabled: true
+    model_path: /app/models/openwakeword/help_en.tflite   # [PROVISIONAL] not trained yet
+    inference_framework: tflite
+    threshold: 0.90
+    hysteresis: {hits: 2, window_s: 10}
+    cooldown_s: 60
+    diagnostics_only: false
+    ha: {off_delay_s: 60}
+  - event_name: socorro_pt
+    enabled: true
+    model_path: /app/models/openwakeword/socorro_pt.tflite   # [PROVISIONAL] not trained yet
+    inference_framework: tflite
+    threshold: 0.90
+    hysteresis: {hits: 2, window_s: 10}
+    cooldown_s: 60
+    diagnostics_only: false
+    ha: {off_delay_s: 60}
 
 overrides: {}

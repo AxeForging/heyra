@@ -40,6 +40,13 @@
   - `keyword_spotting` uses openWakeWord's stock `hey_jarvis` model as a placeholder —
     `distress_keyword` is NOT a trained "help help" model yet, by design (see Context in
     the Phase 2 plan). Swapping in a real one is a `config.yaml` change, no rebuild.
+  - `keyword_spotting` is now a list (was a single entry) — added `help_en`/`socorro_pt`
+    slots pointing at model files that don't exist yet. `main.py` logs a warning and skips
+    starting a spotter for a missing model instead of crashing; `mqtt_out.py` withholds
+    that event's HA discovery entity until the file is present. See
+    `docs/wake-word-training.md` for the actual training runbook (openWakeWord is
+    officially English-only; Portuguese is unproven DIY territory) — training itself is
+    deliberately deferred, same bucket as Phase 4 calibration.
 - **Phase 3 (Home Assistant integration)** — config generated, **live-checked but not
   live-fired**. The real HA instance is `http://homeassistant.local:8123/` (HA 2026.7.3,
   Home Assistant OS/Supervised, same subnet as this dev machine — the earlier

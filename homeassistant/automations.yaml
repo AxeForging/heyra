@@ -157,6 +157,59 @@
             value_template: "{{ wait.trigger is not none }}"
   mode: single
 
+- id: heyra_help_en
+  alias: "Heyra: help (English) [PROVISIONAL -- no model loaded yet]"
+  description: >-
+    No trained model exists yet -- server/listener/config.yaml's help_en entry
+    points at a model file that doesn't exist, so this entity won't appear/
+    fire until one is trained and dropped in. See docs/wake-word-training.md.
+    Wired identically to distress_keyword (repeat-until-ack) so it's ready
+    the moment a real model lands.
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.heyra_kitchen_help_en
+      to: "on"
+  action:
+    - repeat:
+        sequence:
+          - service: notify.notify
+            data:
+              message: "🚨 \"Help\" detected (kitchen)"
+          - wait_for_trigger:
+              - platform: event
+                event_type: esphome.button_ack
+            timeout: "00:01:00"
+        until:
+          - condition: template
+            value_template: "{{ wait.trigger is not none }}"
+  mode: single
+
+- id: heyra_socorro_pt
+  alias: "Heyra: socorro (Portuguese) [PROVISIONAL -- no model loaded yet]"
+  description: >-
+    Same as help_en above -- no trained model yet, see
+    docs/wake-word-training.md. Portuguese training is exploratory
+    (openWakeWord is officially English-only), so treat this one as further
+    out than help_en.
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.heyra_kitchen_socorro_pt
+      to: "on"
+  action:
+    - repeat:
+        sequence:
+          - service: notify.notify
+            data:
+              message: "🚨 \"Socorro\" detected (kitchen)"
+          - wait_for_trigger:
+              - platform: event
+                event_type: esphome.button_ack
+            timeout: "00:01:00"
+        until:
+          - condition: template
+            value_template: "{{ wait.trigger is not none }}"
+  mode: single
+
 - id: heyra_doorbell_and_dog_bark
   alias: "Heyra: doorbell and dog bark"
   description: "Normal notifications only -- no beacon/LED, per spec."

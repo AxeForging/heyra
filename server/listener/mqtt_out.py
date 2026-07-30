@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 
 import aiomqtt
 
@@ -91,12 +92,19 @@ class MqttPublisher:
 
     async def publish_all_discovery(self, config: Config) -> None:
         all_events = dict(config.events)
-        all_events[config.keyword_spotting.event.name] = config.keyword_spotting.event
+        # Keyword events whose model file isn't present yet (e.g. help_en/socorro_pt
+        # pending training) get no discovery entity -- an entity that can never fire
+        # is worse than no entity at all.
+        unavailable = set()
+        for kw in config.keyword_spotting:
+            all_events[kw.event.name] = kw.event
+            if not kw.enabled or not os.path.exists(kw.model_path):
+                unavailable.add(kw.event.name)
         for room in set(config.units.values()):
             await self.publish_status_sensor_discovery(room)
             for event_name, cfg in all_events.items():
-                if cfg.diagnostics_only:
-                    continue  # log-only events (e.g. thump) never get a discovery entity
+                if cfg.diagnostics_only or event_name in unavailable:
+                    continue  # log-only events (e.g. thump), or keyword models not yet present
                 await self.publish_discovery(room, event_name, cfg)
 
 
