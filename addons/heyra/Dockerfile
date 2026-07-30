@@ -14,19 +14,12 @@ RUN pip install --no-cache-dir -e .
 # internal dependencies of the library itself, always baked in here.
 RUN python -c "import openwakeword.utils; openwakeword.utils.download_models()"
 
-# esphome needs Python >=3.12; the listener's proven numpy==1.26.4/tflite-runtime==2.14.0
-# stack was validated on 3.11 (don't relitigate that ABI landmine). esphome only ever runs
-# as a subprocess CLI (compile/upload), never imported as a library, so it doesn't need to
-# share an interpreter -- give it its own venv instead of forking the base image. Debian
-# bookworm's default apt repos don't carry python3.12, so use uv (already proven in this
-# repo, see firmware/ esphome validation) to fetch a standalone Python 3.12 build.
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
-RUN uv venv --python 3.12 /opt/esphome-venv \
-    && uv pip install --python /opt/esphome-venv/bin/python esphome==2026.7.3
-
+# Flashing (esphome + its own Python 3.12 venv, firmware/ source) moved to the public
+# WebSerial page -- one shared firmware image, no per-unit compile, nothing left to run
+# here. This was the single largest layer in the image; dropping it is the real
+# weight-reduction the owner asked for.
 COPY listener ./listener
 COPY app ./app
-COPY firmware ./firmware
 COPY render_config.py run.py ./
 
 # Baked into the image (not volume-mounted): a Supervisor-managed Add-on can only

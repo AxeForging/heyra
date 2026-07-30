@@ -37,9 +37,12 @@ network goes down.
 
 1. In Home Assistant: **Settings → Add-ons → Add-on Store → ⋮ → Repositories**
    → add `https://github.com/AxeForging/heyra`.
-2. Install the **Heyra** Add-on — detection service plus a USB firmware-
-   flashing wizard in its Ingress panel, no dev machine or CLI needed.
-3. See [`homeassistant/README.md`](homeassistant/README.md) for the full
+2. Install the **Heyra** Add-on — the detection service, plus a live view
+   of your configured units in its Ingress panel.
+3. Flash each ATOM Echo from [axeforging.github.io/heyra/flash.html](https://axeforging.github.io/heyra/flash.html)
+   — runs entirely in your browser (Chrome/Edge, via WebSerial), no dev
+   machine or CLI needed.
+4. See [`homeassistant/README.md`](homeassistant/README.md) for the full
    setup checklist (MQTT, notifications, automations).
 
 ## Compatible hardware
@@ -55,7 +58,7 @@ for the hardware contract a new board profile needs to satisfy.
 
 ```
 firmware/          ESPHome firmware + the udp_audio_streamer component (Goertzel/T3 smoke detection)
-addons/             Home Assistant Add-on (heyra -- listener + USB flashing wizard)
+addons/             Home Assistant Add-on (heyra -- the detection service)
 homeassistant/      Automations, dashboard, MQTT reference config
 server/             Plain docker-compose deployment, for non-HA users
 docs/               Build plan, wake-word training runbook

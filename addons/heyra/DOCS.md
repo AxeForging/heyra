@@ -1,9 +1,10 @@
 # Heyra
 
 Detects smoke alarms, baby crying, glass breaking, dog barks, and doorbells
-by sound, and tells Home Assistant — plus flashes new ATOM Echo units over
-USB from a panel inside HA, no dev machine needed. Under the hood: YAMNet +
-openWakeWord classification, published via MQTT Discovery.
+by sound, and tells Home Assistant. Under the hood: YAMNet + openWakeWord
+classification, published via MQTT Discovery. New units are flashed from
+your browser at [axeforging.github.io/heyra/flash.html](https://axeforging.github.io/heyra/flash.html)
+— nothing to install on this Add-on for that.
 
 ## Required: an MQTT broker
 
@@ -23,21 +24,27 @@ Two ways to satisfy this:
 
 ## Configuration
 
-- **`units`** — one entry per ATOM Echo unit (`unit_id` matches the
-  firmware's `unit_id` substitution, `room` is used in entity names/MQTT
-  topics). This is the only setting exposed through the Add-on's
+- **`units`** — one entry per ATOM Echo unit (`unit_id` matches the Unit ID
+  you set on the device itself after flashing, `room` is used in entity
+  names/MQTT topics). This is the only setting exposed through the Add-on's
   Configuration tab.
 
 ## The Ingress panel
 
-Open the panel (sidebar icon) for two things:
-- **Live status** links to `<host>:8080/healthz` for per-unit online/offline
-  JSON (not proxied through Ingress, open it directly on your network).
-- **Flash a unit** — pick a board (from `firmware/boards/`), fill in room/
-  WiFi/unit details, hit Flash. Streams the real `esphome compile`/
-  `esphome upload` output live. USB-serial access (`uart: true`) is granted
-  automatically; if your device doesn't show up in the port list, unplug/
-  replug it and reload.
+Open the panel (sidebar icon) to see your configured units and whether
+they're currently online, pulled live from the same data `/healthz` serves
+(below). It also links out to the WebSerial flasher for adding a new unit.
+
+## Flashing a new unit
+
+Handled entirely by [axeforging.github.io/heyra/flash.html](https://axeforging.github.io/heyra/flash.html)
+in your browser — no dev machine, nothing installed here. One shared
+firmware image works for every unit; after flashing, connect to the unit's
+own open Wi-Fi hotspot to give it your real network, then visit
+`http://<device>.local` to set its **Unit ID** — this must match the
+`unit_id` you give it below in **Configuration**, since that's what maps a
+unit to a room. Requires a desktop build of Chrome or Edge (WebSerial isn't
+available in Firefox, Safari, or on mobile).
 
 ## Advanced tuning
 
@@ -52,10 +59,11 @@ replaces the built-in template. Restart the Add-on to pick up changes.
 
 ## Ports
 
-- `6969/udp` — raw audio ingest from firmware units (must match
-  `server_port` in your `firmware/units/*.yaml`).
-- `8080/tcp` — `/healthz` status endpoint.
-- Ingress panel — status + flashing wizard, no separate port to remember.
+- `6969/udp` — raw audio ingest from firmware units (fixed, matches every
+  unit's `server_port` — there's no per-unit config to keep in sync anymore).
+- `8080/tcp` — `/healthz` status endpoint (also what the Ingress panel
+  reads from, over loopback).
+- Ingress panel — device status, no separate port to remember.
 
 ## New alert types
 
@@ -65,9 +73,9 @@ do anything — see `docs/wake-word-training.md` in the source repo.
 
 ## What flashing doesn't do (yet)
 
-- No OTA flashing (USB only) — a unit already on your network can still be
-  re-flashed with the `esphome` CLI directly, or via the official ESPHome
-  Add-on if you have it installed.
+- USB only — no OTA for a unit's first flash. A unit already on your
+  network can still be re-flashed over the air with the `esphome` CLI
+  directly, or via the official ESPHome Add-on if you have it installed.
 - No log tailing after flashing — add the ESPHome integration in Home
-  Assistant (Settings → Devices & Services) to see a flashed unit's logs
-  and entities.
+  Assistant (Settings → Devices & Services) to see a unit's logs and
+  entities once it's on your network.

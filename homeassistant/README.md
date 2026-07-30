@@ -53,13 +53,13 @@ Two "install as a plugin" ideas came up. Verdict on each:
   would only save you one `docker compose up` command at the cost of
   maintaining an Add-on `config.yaml`/repo listing — not worth it here.
   Keep running it via `server/docker-compose.yml`.
-- **Flashing/configuring units from within HA** — use the official
-  **ESPHome Add-on** (built by the ESPHome project, install from Settings →
-  Add-ons → Add-on Store). It's a full web dashboard for creating,
-  compiling, and flashing ESPHome device configs over USB or OTA. Import
-  `firmware/common.yaml` and `firmware/units/*.yaml` into it if you'd
-  rather manage the fleet from HA's UI instead of the `esphome` CLI from a
-  dev machine. Not required — CLI flashing still works exactly as before.
+- **Flashing/configuring units from within HA** — most people should just
+  use [axeforging.github.io/heyra/flash.html](https://axeforging.github.io/heyra/flash.html)
+  (browser-based WebSerial, no HA integration needed). For OTA re-flashing
+  or deeper per-device config once a unit's already on your network, the
+  official **ESPHome Add-on** (built by the ESPHome project, install from
+  Settings → Add-ons → Add-on Store) works too — import `firmware/atom-echo.yaml`
+  into it, or use the `esphome` CLI directly from a dev machine.
 
 ## Manual test (once the above is done)
 

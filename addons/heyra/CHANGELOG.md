@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.0
+
+Flashing moves off the Add-on entirely, onto
+[axeforging.github.io/heyra/flash.html](https://axeforging.github.io/heyra/flash.html)
+(WebSerial, runs in the browser, no dev machine needed) -- it now works
+from whatever laptop or phone you're holding, not just whatever machine
+runs Home Assistant itself (previously flashing needed the ATOM Echo
+plugged in over USB to that specific machine). This also drops the
+Add-on's single largest layer: no more esphome or its own Python 3.12
+venv, no more `uart: true` USB passthrough. The Ingress panel is now a
+device-status view only (see 0.3.2's device list) with a link out to the
+flashing page. See firmware's own changes for what made a single shared
+image possible (runtime Unit ID, DHCP, mDNS server discovery).
+
 ## 0.3.2
 
 Fixes a real 500 on the flash form: `python-multipart` was never a declared

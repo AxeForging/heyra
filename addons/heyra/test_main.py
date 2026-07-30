@@ -1,30 +1,13 @@
 """Run with: pytest addons/heyra/ (needs starlette installed)."""
-import os
 from unittest.mock import Mock, patch
 
-os.environ.setdefault("HEYRA_FIRMWARE_DIR", str(__import__("pathlib").Path(__file__).parent / "firmware"))
-
-from app.main import (  # noqa: E402
-    UNIT_TEMPLATE,
+from app.main import (
+    FLASH_URL,
+    STATUS_HTML,
     fetch_unit_snapshot,
-    list_boards,
     next_unit_id,
     render_units_html,
 )
-
-
-def test_list_boards_finds_atom_echo():
-    assert "atom-echo" in list_boards()
-
-
-def test_unit_template_renders_without_error():
-    rendered = UNIT_TEMPLATE.format(
-        room="kitchen", device_name="atom-echo-02", friendly_name="Heyra Kitchen",
-        unit_id="2", static_ip="192.168.1.102",
-        board_path="/app/firmware/boards/atom-echo.yaml", common_path="/app/firmware/common.yaml",
-    )
-    assert "device_name: atom-echo-02" in rendered
-    assert "board: !include /app/firmware/boards/atom-echo.yaml" in rendered
 
 
 def test_next_unit_id_starts_at_one_when_no_units_configured():
@@ -66,3 +49,14 @@ def test_fetch_unit_snapshot_returns_json_on_success():
 def test_fetch_unit_snapshot_returns_empty_dict_on_failure():
     with patch("app.main.requests.get", side_effect=ConnectionError("listener not up yet")):
         assert fetch_unit_snapshot() == {}
+
+
+def test_status_html_renders_flash_link_and_units():
+    rendered = STATUS_HTML.format(
+        units_html=render_units_html({"1": {"room": "kitchen", "online": True, "last_packet_age_s": 1.2}}),
+        next_unit_id=next_unit_id({"1": {}}),
+        flash_url=FLASH_URL,
+    )
+    assert FLASH_URL in rendered
+    assert "kitchen" in rendered
+    assert "next available unit ID: 2" in rendered
