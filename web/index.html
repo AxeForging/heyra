@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Heyra — Acoustic event detection for Home Assistant</title>
+<meta name="description" content="Dumb edge, smart server acoustic event detection mesh for Home Assistant, by AxeForging.">
+<link rel="icon" href="./favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="./axeforge.css">
+<style>
+  /* AxeForge shell (axeforge.css) + Heyra's own alert-red as the custom flavor
+     accent -- same "one custom accent per project" pattern as rsvp-m5's terracotta. */
+  :root { --af-accent: #ff3b3b; --af-accent-hover: #e63333; --af-accent-contrast: #ffffff; }
+
+  body { margin: 0; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; }
+  .topbar-brand { display: flex; align-items: center; gap: 0.6rem; color: var(--af-text); text-decoration: none; }
+  .topbar-brand img { height: 28px; width: 28px; }
+  main { max-width: 960px; margin: 0 auto; padding: 0 1.25rem; }
+  .hero { text-align: center; padding: 4rem 0 3rem; }
+  .hero img.mark { height: 40px; margin-bottom: 1.25rem; }
+  .hero .product-name { font-family: var(--af-font-mono); font-size: 1rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--af-accent); margin-bottom: 0.5rem; }
+  .hero h1 { font-size: 2.4rem; margin: 0 0 0.75rem; }
+  .hero p { color: var(--af-text-muted); font-size: 1.15rem; max-width: 640px; margin: 0 auto 1.75rem; }
+  .section-kicker { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.8rem; color: var(--af-accent); font-weight: 700; }
+  .section-title { font-size: 1.6rem; margin: 0.35rem 0 1.25rem; }
+  section { padding: 2.5rem 0; border-top: 1px solid var(--af-line); }
+  .feature-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.9rem; }
+  .feature-list li { padding-left: 1.4rem; position: relative; color: var(--af-text-muted); }
+  .feature-list li::before { content: "●"; color: var(--af-accent); position: absolute; left: 0; }
+  .feature-list li strong { color: var(--af-text); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+  .cards .glass-card { padding: 1.25rem; }
+  .cards h3 { margin-top: 0; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--af-line); }
+  th { color: var(--af-text-muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
+  code { font-family: var(--af-font-mono); background: var(--af-surface); padding: 0.15em 0.4em; border-radius: 4px; }
+  footer { text-align: center; padding: 3rem 0; color: var(--af-text-muted); }
+  footer a { color: var(--af-text); }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <main style="width:100%; display:flex; align-items:center; justify-content:space-between; padding:0;">
+      <a class="topbar-brand" href="https://tools.axeforge.io">
+        <img src="./logo.svg" alt="">
+        <span>AxeForging</span>
+      </a>
+      <a class="axe-button" href="https://github.com/AxeForging/heyra">View on GitHub</a>
+    </main>
+  </header>
+
+  <main>
+    <section class="hero" style="border-top:none;">
+      <img class="mark" src="./logo.svg" alt="">
+      <div class="product-name">Heyra</div>
+      <h1>Hear what matters in your home.</h1>
+      <p>
+        Dumb edge, smart server. Cheap ESP32 units stream raw audio to a
+        server that classifies it and tells Home Assistant — baby crying,
+        smoke alarm, glass breaking, someone at the door, and more. The
+        smoke alarm detector runs on-device too, so it survives a server or
+        network outage.
+      </p>
+      <a class="axe-button" href="#install">Get started</a>
+    </section>
+
+    <section id="features">
+      <div class="section-kicker">Features</div>
+      <div class="section-title">Nine ears, one brain</div>
+      <ul class="feature-list">
+        <li><strong>Baby cry</strong> — classified server-side via YAMNet</li>
+        <li><strong>Smoke alarm</strong> — on-device AND server-side, survives an outage</li>
+        <li><strong>Glass break</strong> — with a "nobody home" condition example</li>
+        <li><strong>Dog bark</strong> / <strong>Doorbell</strong></li>
+        <li><strong>Shout</strong> / <strong>Scream</strong> — split into distinct alerts</li>
+        <li><strong>"Help" / "Socorro" wake words</strong> — pipeline ready, models pending</li>
+        <li><strong>MQTT Discovery</strong> — entities appear in HA automatically</li>
+        <li><strong>Privacy-first</strong> — no audio persisted outside opt-in debug mode</li>
+        <li><strong>Any fleet size</strong> — one unit or twenty</li>
+      </ul>
+    </section>
+
+    <section id="guide">
+      <div class="section-kicker">Guide</div>
+      <div class="section-title">How it fits together</div>
+      <div class="cards">
+        <div class="glass-card"><h3>1. Firmware</h3>ESPHome on an ATOM Echo streams raw PCM over UDP and runs a Goertzel/pattern detector for smoke alarms entirely on-device.</div>
+        <div class="glass-card"><h3>2. Server</h3>A small Python service classifies the stream with YAMNet + openWakeWord and publishes events over MQTT.</div>
+        <div class="glass-card"><h3>3. Home Assistant</h3>MQTT Discovery creates the entities; automations and a dashboard ship ready to import.</div>
+      </div>
+    </section>
+
+    <section id="use-cases">
+      <div class="section-kicker">Use cases</div>
+      <div class="section-title">Why people run Heyra</div>
+      <ul class="feature-list">
+        <li><strong>Baby monitoring</strong> — get notified the moment crying starts, anywhere in the house.</li>
+        <li><strong>Accessibility / elderly care</strong> — distress-keyword detection for someone who can't reach a button.</li>
+        <li><strong>Home security backup</strong> — glass-break and smoke detection that don't depend on a subscription.</li>
+        <li><strong>General awareness</strong> — doorbell and dog-bark alerts even when you're not in the room.</li>
+      </ul>
+    </section>
+
+    <section id="hardware">
+      <div class="section-kicker">Compatible hardware</div>
+      <div class="section-title">Built to grow</div>
+      <table>
+        <tr><th>Board</th><th>Status</th></tr>
+        <tr><td>M5Stack ATOM Echo</td><td>Verified, in production use</td></tr>
+      </table>
+      <p style="color:var(--af-text-muted)">
+        See <code>firmware/boards/README.md</code> in the repo for the
+        hardware contract a new board profile needs to satisfy.
+      </p>
+    </section>
+
+    <section id="install">
+      <div class="section-kicker">Install</div>
+      <div class="section-title">Add it to Home Assistant</div>
+      <ol style="color:var(--af-text-muted)">
+        <li>Settings → Add-ons → Add-on Store → ⋮ → Repositories</li>
+        <li>Add <code>https://github.com/AxeForging/heyra</code></li>
+        <li>Install <strong>Heyra Listener</strong> (and <strong>Heyra Flasher</strong> if you're flashing new units)</li>
+      </ol>
+      <a class="axe-button" href="https://github.com/AxeForging/heyra#install">Full instructions on GitHub</a>
+    </section>
+  </main>
+
+  <footer>
+    <p>Built by <a href="https://github.com/murilopmachado">Murilo Machado</a> and the
+       <a href="https://github.com/AxeForging">AxeForging</a> team.</p>
+    <p>Check out our other tools at <a href="https://tools.axeforge.io">tools.axeforge.io</a>.</p>
+  </footer>
+</body>
+</html>

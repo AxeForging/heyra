@@ -102,9 +102,12 @@
     (`~/workspace/axeforging/branding/logo.svg`/`wordmark.svg`) via ImageMagick, with a
     Heyra-specific accent color (`#ff3b3b`) substituted for the kit's default forge-orange,
     same "one custom accent per project" pattern as `rsvp-m5`'s own terracotta.
-  - Not yet done: the public `github.com/AxeForging/heyra` repo itself and the GitHub Pages
-    landing site — see the plan file referenced at the top of Phase 1 for the full 6-stage
-    plan.
+  - GitHub Pages landing site added: `web/index.html` (AxeForge brand kit + a Heyra-specific
+    accent, `#ff3b3b`) deployed via `.github/workflows/pages.yml`, mirroring the real
+    `AxeForging/rsvp-m5` Pages pattern (`configure-pages`/`upload-pages-artifact`/
+    `deploy-pages`). Screenshot-verified locally before commit.
+  - Not yet done: the public `github.com/AxeForging/heyra` repo itself — everything above is
+    built and committed locally, pushing it live is the last step.
 - Phase 4 (calibration) — not started.
 
 ## Frozen contract: UDP audio packet format
