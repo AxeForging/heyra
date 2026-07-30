@@ -1,0 +1,9 @@
+substitutions:
+  room: kitchen
+  device_name: atom-echo-01
+  friendly_name: "Heyra Kitchen"
+  unit_id: "1"
+  static_ip: 192.168.1.101  # verified free via ping before assigning
+
+packages:
+  base: !include ../common.yaml

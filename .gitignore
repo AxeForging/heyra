@@ -1,0 +1,5 @@
+firmware/secrets.yaml
+firmware/.esphome/
+firmware/**/*.bin
+__pycache__/
+*.pyc
