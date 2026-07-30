@@ -1,6 +1,6 @@
 [project]
 name = "heyra"
-version = "0.3.1"
+version = "0.3.2"
 requires-python = ">=3.11,<3.12"
 dependencies = [
     "numpy==1.26.4",  # newer numpy 2.x breaks tflite-runtime's compiled ABI (predates numpy 2.0) -- verified
@@ -19,6 +19,9 @@ dependencies = [
     # flashing subprocess calls assume the same behavior was tested against.
     "starlette==0.52.1",
     "uvicorn==0.40.0",
+    # request.form() needs this to parse the flash wizard's multipart/form-data POST --
+    # without it Starlette raises before any board validation runs (a real, silent 500).
+    "python-multipart==0.0.20",
 ]
 
 [project.optional-dependencies]

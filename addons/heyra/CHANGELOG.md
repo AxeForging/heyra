@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.2
+
+Fixes a real 500 on the flash form: `python-multipart` was never a declared
+dependency, so Starlette raised before any board validation ran the moment
+the browser submitted the (multipart/form-data) flash form -- exactly the
+bare "Internal Server Error" some users saw. The Ingress panel now also
+shows your actually-configured units (room, online/offline, last packet
+seen) pulled from the listener's own `/healthz` snapshot over loopback,
+instead of only linking out to a separate, unproxied URL. The flash form's
+Unit ID field is now pre-filled with the next unused ID instead of a
+placeholder that looked like a real default; the static-IP/device-name
+placeholders are now clearly marked as examples.
+
 ## 0.3.1
 
 Fixes a real 404 on "Flash a unit": the Ingress panel's `href="/flash"` and the
