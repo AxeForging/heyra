@@ -1,0 +1,75 @@
+# Board profile: M5Stack ATOM Echo (ESP32-PICO-D4, no PSRAM).
+# See boards/README.md for the hardware contract every board file must satisfy
+# (entity ids this file must define, audio format assumptions, etc).
+
+esp32:
+  board: m5stack-atom
+  framework:
+    type: arduino
+
+i2s_audio:
+  id: i2s_bus
+  # LRCLK is shared between the mic (PDM clock) and the speaker -- this board's mic
+  # and speaker can't run simultaneously (half-duplex), which is why the firmware
+  # stops the mic during play_alert instead of mixing tones over live audio.
+  i2s_lrclk_pin: GPIO33
+  i2s_bclk_pin: GPIO19
+
+microphone:
+  - platform: i2s_audio
+    id: mic
+    i2s_audio_id: i2s_bus
+    adc_type: external
+    pdm: true
+    i2s_din_pin: GPIO23
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    # "mono" is rejected for i2s_audio microphones -- right == mono PDM capture (schema default).
+    channel: right
+
+speaker:
+  - platform: i2s_audio
+    id: spk
+    i2s_audio_id: i2s_bus
+    dac_type: external
+    i2s_dout_pin: GPIO22
+    i2s_mode: primary
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    channel: mono
+
+binary_sensor:
+  - platform: gpio
+    id: button
+    name: "Button"
+    # GPIO39 has no internal pull -- relies on the M5Stack board-level pull-up.
+    pin:
+      number: GPIO39
+      inverted: true
+      mode: INPUT
+    on_click:
+      - min_length: 30ms
+        max_length: 400ms
+        then:
+          - homeassistant.event:
+              event: esphome.button_ack
+              data:
+                unit_id: "${unit_id}"
+                room: "${room}"
+    on_multi_click:
+      - timing:
+          - ON for at least 3s
+        then:
+          - switch.toggle: streaming_switch
+
+light:
+  - platform: esp32_rmt_led_strip
+    id: status_led
+    name: "Status LED"
+    pin: GPIO27
+    num_leds: 1
+    chipset: SK6812
+    rgb_order: GRB
+    effects:
+      - strobe:
+          name: Strobe
