@@ -1,6 +1,6 @@
 [project]
 name = "heyra"
-version = "0.4.0"
+version = "0.5.0"
 requires-python = ">=3.11,<3.12"
 dependencies = [
     "numpy==1.26.4",  # newer numpy 2.x breaks tflite-runtime's compiled ABI (predates numpy 2.0) -- verified
@@ -13,9 +13,16 @@ dependencies = [
     "PyYAML==6.0.3",
     "tqdm==4.70.0",
     "requests==2.34.2",
-    # Ingress web app (device status view).
+    # Ingress web app (device status view + the /assign form below).
     "starlette==0.52.1",
     "uvicorn==0.40.0",
+    # Starlette 0.52's form parsing (both urlencoded and multipart) needs this to even
+    # import -- confirmed by reading formparsers.py directly this time, not assumed
+    # (this exact gap caused a real 500 earlier in this project's own flash form).
+    "python-multipart==0.0.20",
+    # mDNS discovery for the unit_id-assignment feature -- pinned to match the version
+    # esphome itself currently pulls (real, confirmed installed elsewhere in this repo).
+    "zeroconf==0.150.0",
 ]
 
 [project.optional-dependencies]
@@ -31,4 +38,4 @@ include = ["listener*", "app*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["listener/tests", "test_render_config.py", "test_main.py", "test_run.py"]
+testpaths = ["listener/tests", "test_render_config.py", "test_main.py", "test_run.py", "test_discovery.py"]

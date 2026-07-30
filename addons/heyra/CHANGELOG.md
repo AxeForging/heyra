@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.0
+
+The Add-on is now the one place to set a unit's ID -- no more separately
+visiting the device's own local page and hoping the two stay in sync. The
+Ingress panel discovers Heyra units on the network via mDNS
+(`_esphomelib._tcp.local.`, the same mechanism ESPHome's own dashboard uses)
+and shows each one's currently-reported Unit ID; picking a configured unit
+and hitting Assign pushes it directly through the device's `web_server:`
+HTTP API (`POST /number/unit_id_number/set`), which applies and persists
+immediately. New `zeroconf` dependency for the mDNS browsing.
+
 ## 0.4.0
 
 Flashing moves off the Add-on entirely, onto

@@ -24,10 +24,10 @@ Two ways to satisfy this:
 
 ## Configuration
 
-- **`units`** — one entry per ATOM Echo unit (`unit_id` matches the Unit ID
-  you set on the device itself after flashing, `room` is used in entity
-  names/MQTT topics). This is the only setting exposed through the Add-on's
-  Configuration tab.
+- **`units`** — one entry per ATOM Echo unit (`unit_id` is what you assign
+  the physical device to below in the Ingress panel, `room` is used in
+  entity names/MQTT topics). This is the only setting exposed through the
+  Add-on's Configuration tab.
 
 ## The Ingress panel
 
@@ -35,16 +35,21 @@ Open the panel (sidebar icon) to see your configured units and whether
 they're currently online, pulled live from the same data `/healthz` serves
 (below). It also links out to the WebSerial flasher for adding a new unit.
 
+Below that, **Devices found on your network** lists any Heyra unit it
+discovers via mDNS, along with the Unit ID it's currently reporting — pick
+which configured unit it is and hit **Assign** to push the correct ID
+straight to the device. This is the one place to set it; there's no need to
+separately visit the device's own local page.
+
 ## Flashing a new unit
 
 Handled entirely by [axeforging.github.io/heyra/flash.html](https://axeforging.github.io/heyra/flash.html)
 in your browser — no dev machine, nothing installed here. One shared
 firmware image works for every unit; after flashing, connect to the unit's
-own open Wi-Fi hotspot to give it your real network, then visit
-`http://<device>.local` to set its **Unit ID** — this must match the
-`unit_id` you give it below in **Configuration**, since that's what maps a
-unit to a room. Requires a desktop build of Chrome or Edge (WebSerial isn't
-available in Firefox, Safari, or on mobile).
+own open Wi-Fi hotspot to give it your real network. Once it's online, it
+shows up under **Devices found on your network** above — assign it there.
+Requires a desktop build of Chrome or Edge (WebSerial isn't available in
+Firefox, Safari, or on mobile).
 
 ## Advanced tuning
 

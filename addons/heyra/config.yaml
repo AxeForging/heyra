@@ -1,5 +1,5 @@
 name: Heyra
-version: "0.4.0"
+version: "0.5.0"
 slug: heyra
 description: Smoke alarm, baby cry, glass break, and doorbell detection for Home Assistant via sound. By AxeForging.
 url: https://github.com/AxeForging/heyra

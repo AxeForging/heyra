@@ -4,8 +4,10 @@ from unittest.mock import Mock, patch
 from app.main import (
     FLASH_URL,
     STATUS_HTML,
+    fetch_device_unit_id,
     fetch_unit_snapshot,
     next_unit_id,
+    render_discovered_html,
     render_units_html,
 )
 
@@ -54,9 +56,43 @@ def test_fetch_unit_snapshot_returns_empty_dict_on_failure():
 def test_status_html_renders_flash_link_and_units():
     rendered = STATUS_HTML.format(
         units_html=render_units_html({"1": {"room": "kitchen", "online": True, "last_packet_age_s": 1.2}}),
+        discovered_html="",
         next_unit_id=next_unit_id({"1": {}}),
         flash_url=FLASH_URL,
     )
     assert FLASH_URL in rendered
     assert "kitchen" in rendered
     assert "next available unit ID: 2" in rendered
+
+
+def test_fetch_device_unit_id_returns_value_on_success():
+    fake_response = Mock()
+    fake_response.json.return_value = {"id": "number-unit_id", "value": 3, "state": "3"}
+    with patch("app.main.requests.get", return_value=fake_response):
+        assert fetch_device_unit_id("heyra-atom-echo-a1b2c3.local") == 3
+
+
+def test_fetch_device_unit_id_returns_none_on_failure():
+    with patch("app.main.requests.get", side_effect=ConnectionError("device not reachable")):
+        assert fetch_device_unit_id("heyra-atom-echo-a1b2c3.local") is None
+
+
+async def test_render_discovered_html_empty_when_no_devices():
+    assert await render_discovered_html({}, [1, 2]) == ""
+
+
+async def test_render_discovered_html_shows_hostname_and_assign_form():
+    fake_response = Mock()
+    fake_response.json.return_value = {"value": 1}
+    with patch("app.main.requests.get", return_value=fake_response):
+        rendered = await render_discovered_html({"heyra-atom-echo-a1b2c3.local": object()}, [1, 2])
+    assert "heyra-atom-echo-a1b2c3.local" in rendered
+    assert "currently reports unit 1" in rendered
+    assert 'action="assign"' in rendered
+    assert '<option value="2">2</option>' in rendered
+
+
+async def test_render_discovered_html_shows_not_reachable_on_failure():
+    with patch("app.main.requests.get", side_effect=ConnectionError("not up yet")):
+        rendered = await render_discovered_html({"heyra-atom-echo-a1b2c3.local": object()}, [1])
+    assert "not reachable yet" in rendered
