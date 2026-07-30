@@ -9,129 +9,458 @@
 <link rel="stylesheet" href="./axeforge.css">
 <style>
   /* AxeForge shell (axeforge.css) + Heyra's own alert-red as the custom flavor
-     accent -- same "one custom accent per project" pattern as rsvp-m5's terracotta. */
-  :root { --af-accent: #ff3b3b; --af-accent-hover: #e63333; --af-accent-contrast: #ffffff; }
+     accent -- same "one custom accent per project" pattern as rsvp-m5's terracotta.
+     Fonts/components (Inter, JetBrains Mono, .glass-card, .terminal-window, .axe-button)
+     are inherited from the kit deliberately, not swapped -- the kit's own consistency
+     contract bans per-tool display fonts, and this is a real cross-project brand
+     system, not a fresh greenfield choice to second-guess. */
+  :root { --af-accent: #ff3b3b; --af-accent-hover: #e62e2e; --af-accent-contrast: #ffffff; }
 
+  * { box-sizing: border-box; }
   body { margin: 0; }
-  .topbar { display: flex; align-items: center; justify-content: space-between; }
-  .topbar-brand { display: flex; align-items: center; gap: 0.6rem; color: var(--af-text); text-decoration: none; }
-  .topbar-brand img { height: 28px; width: 28px; }
-  main { max-width: 960px; margin: 0 auto; padding: 0 1.25rem; }
-  .hero { text-align: center; padding: 4rem 0 3rem; }
-  .hero img.mark { height: 40px; margin-bottom: 1.25rem; }
-  .hero .product-name { font-family: var(--af-font-mono); font-size: 1rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--af-accent); margin-bottom: 0.5rem; }
-  .hero h1 { font-size: 2.4rem; margin: 0 0 0.75rem; }
-  .hero p { color: var(--af-text-muted); font-size: 1.15rem; max-width: 640px; margin: 0 auto 1.75rem; }
-  .section-kicker { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.8rem; color: var(--af-accent); font-weight: 700; }
-  .section-title { font-size: 1.6rem; margin: 0.35rem 0 1.25rem; }
-  section { padding: 2.5rem 0; border-top: 1px solid var(--af-line); }
-  .feature-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.9rem; }
-  .feature-list li { padding-left: 1.4rem; position: relative; color: var(--af-text-muted); }
-  .feature-list li::before { content: "●"; color: var(--af-accent); position: absolute; left: 0; }
-  .feature-list li strong { color: var(--af-text); }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
-  .cards .glass-card { padding: 1.25rem; }
-  .cards h3 { margin-top: 0; }
+  a { color: inherit; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* ---- Topbar ---- */
+  .topbar {
+    padding: 0;
+    min-height: 68px;
+    border-bottom: 1px solid var(--af-line);
+    background: color-mix(in srgb, var(--af-bg) 88%, transparent);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 40;
+  }
+  .topbar .wrap { display: flex; align-items: center; justify-content: space-between; min-height: 68px; }
+  .topbar-brand { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; font-weight: 700; }
+  .topbar-brand img { height: 24px; width: 24px; }
+  .topbar-brand .sep { color: var(--af-text-muted); font-weight: 400; margin: 0 0.15rem; }
+  .topbar-nav { display: flex; align-items: center; gap: 1.5rem; font-size: 0.9rem; }
+  .topbar-nav a.navlink { color: var(--af-text-muted); text-decoration: none; }
+  .topbar-nav a.navlink:hover { color: var(--af-text); }
+
+  /* ---- Hero: asymmetric two-column ---- */
+  .hero {
+    background-image: radial-gradient(circle, var(--af-line) 1px, transparent 1px);
+    background-size: 32px 32px;
+    background-position: -8px -8px;
+    border-bottom: 1px solid var(--af-line);
+  }
+  .hero .wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+    gap: 3rem;
+    align-items: center;
+    padding-top: 4.5rem;
+    padding-bottom: 4.5rem;
+  }
+  .kicker {
+    font-family: var(--af-font-mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--af-accent);
+    margin-bottom: 1rem;
+  }
+  .hero h1 {
+    font-size: clamp(2.1rem, 1.4rem + 2.6vw, 3.1rem);
+    line-height: 1.08;
+    margin: 0 0 1.1rem;
+    letter-spacing: -0.01em;
+  }
+  .hero p.lede {
+    color: var(--af-text-muted);
+    font-size: 1.08rem;
+    line-height: 1.65;
+    max-width: 46ch;
+    margin: 0 0 1.75rem;
+  }
+  .hero .ctas { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.75rem 1.4rem; border-radius: var(--af-radius);
+    border: 1px solid var(--af-line); color: var(--af-text);
+    text-decoration: none; font-weight: 600; font-size: 1rem;
+    transition: border-color 0.15s ease;
+  }
+  .btn-ghost:hover { border-color: color-mix(in srgb, var(--af-accent) 50%, transparent); }
+
+  /* ---- Live feed demo (built from the kit's own .terminal-window) ---- */
+  .feed-caption { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; font-size: 0.8rem; color: var(--af-text-muted); }
+  .pulse-dot { position: relative; width: 8px; height: 8px; border-radius: 50%; background: var(--af-accent); flex: none; }
+  .pulse-dot::after {
+    content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--af-accent);
+    animation: pulse 2s ease-out infinite;
+  }
+  @keyframes pulse { 0% { opacity: 0.6; transform: scale(1); } 100% { opacity: 0; transform: scale(2.8); } }
+  #feed-window { box-shadow: 0 30px 60px -20px rgb(0 0 0 / 0.6); }
+  #feed-body { min-height: 15.5rem; max-height: 15.5rem; padding: 0.85rem 1rem; overflow: hidden; }
+  .feed-line {
+    display: grid; grid-template-columns: auto auto 1fr auto; gap: 0.6rem; align-items: baseline;
+    padding: 0.3rem 0; color: var(--af-text-muted);
+    animation: feed-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes feed-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .feed-line .ts { color: var(--af-text-muted); opacity: 0.6; }
+  .feed-line .room { color: var(--af-text); }
+  .feed-line .label { color: var(--af-text); }
+  .feed-tone { width: 6px; height: 6px; border-radius: 50%; align-self: center; }
+  .feed-tone-info { background: #22d3ee; }
+  .feed-tone-warn { background: #ffb000; }
+  .feed-tone-critical { background: var(--af-accent); box-shadow: 0 0 8px color-mix(in srgb, var(--af-accent) 60%, transparent); }
+  @media (prefers-reduced-motion: reduce) {
+    .feed-line { animation: none; }
+    .pulse-dot::after { animation: none; opacity: 0; }
+  }
+
+  /* ---- Sections ---- */
+  section { padding: 4rem 0; border-top: 1px solid var(--af-line); }
+  .section-head { margin-bottom: 2.25rem; max-width: 60ch; }
+  .kicker-sm { font-family: var(--af-font-mono); font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--af-accent); margin-bottom: 0.5rem; }
+  .section-title { font-size: clamp(1.5rem, 1.3rem + 0.8vw, 1.9rem); margin: 0 0 0.6rem; letter-spacing: -0.005em; }
+  .section-sub { color: var(--af-text-muted); line-height: 1.6; margin: 0; }
+
+  /* ---- Feature grid ---- */
+  .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+  .feature-card { padding: 1.25rem 1.4rem; }
+  .feature-card .tone-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.65rem; }
+  .feature-card h3 { margin: 0; font-size: 1.02rem; }
+  .feature-card p { margin: 0; color: var(--af-text-muted); font-size: 0.92rem; line-height: 1.55; }
+  .feature-card.provisional { opacity: 0.82; }
+  .feature-card .badge {
+    font-family: var(--af-font-mono); font-size: 0.65rem; letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--af-text-muted); border: 1px solid var(--af-line); border-radius: 999px; padding: 0.15rem 0.5rem;
+  }
+
+  /* ---- Guide: asymmetric numbered flow ---- */
+  .guide-flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; counter-reset: step; }
+  .guide-step { padding: 1.5rem; position: relative; }
+  .guide-step .num { font-family: var(--af-font-mono); font-size: 0.85rem; color: var(--af-accent); margin-bottom: 0.75rem; }
+  .guide-step h3 { margin: 0 0 0.5rem; font-size: 1.05rem; }
+  .guide-step p { margin: 0; color: var(--af-text-muted); font-size: 0.93rem; line-height: 1.6; }
+
+  /* ---- Mic range diagram ---- */
+  .range-layout { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(280px, 1.05fr); gap: 2.5rem; align-items: center; }
+  .range-diagram { display: flex; align-items: center; justify-content: center; padding: 1rem; }
+  .range-diagram svg { max-width: 100%; height: auto; }
+  .range-legend { display: flex; flex-direction: column; gap: 0.9rem; }
+  .range-legend-item { display: flex; gap: 0.8rem; align-items: flex-start; }
+  .range-swatch { width: 12px; height: 12px; border-radius: 50%; margin-top: 0.35rem; flex: none; }
+  .range-legend-item h4 { margin: 0 0 0.2rem; font-size: 0.95rem; }
+  .range-legend-item p { margin: 0; color: var(--af-text-muted); font-size: 0.88rem; line-height: 1.5; }
+  .range-caption {
+    margin-top: 1.5rem; padding: 0.9rem 1.1rem; border-radius: var(--af-radius);
+    background: color-mix(in srgb, var(--af-accent) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--af-accent) 25%, transparent);
+    font-size: 0.85rem; color: var(--af-text-muted);
+  }
+  .range-caption strong { color: var(--af-text); }
+
+  /* ---- Use cases ---- */
+  .usecase-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; }
+  .usecase-card { padding: 1.25rem 1.4rem; }
+  .usecase-card h3 { margin: 0 0 0.5rem; font-size: 1rem; }
+  .usecase-card p { margin: 0; color: var(--af-text-muted); font-size: 0.9rem; line-height: 1.55; }
+
+  /* ---- Hardware table ---- */
   table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--af-line); }
-  th { color: var(--af-text-muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
-  code { font-family: var(--af-font-mono); background: var(--af-surface); padding: 0.15em 0.4em; border-radius: 4px; }
-  footer { text-align: center; padding: 3rem 0; color: var(--af-text-muted); }
-  footer a { color: var(--af-text); }
+  th, td { text-align: left; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--af-line); }
+  th { color: var(--af-text-muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; font-family: var(--af-font-mono); }
+  code { font-family: var(--af-font-mono); background: var(--af-surface); padding: 0.15em 0.45em; border-radius: 4px; font-size: 0.9em; }
+
+  /* ---- Install ---- */
+  .install-steps { counter-reset: install; display: flex; flex-direction: column; gap: 0.9rem; max-width: 56ch; margin: 0 0 1.75rem; }
+  .install-step { display: flex; gap: 0.9rem; align-items: flex-start; }
+  .install-step .n {
+    counter-increment: install; flex: none; width: 1.75rem; height: 1.75rem; border-radius: 50%;
+    border: 1px solid var(--af-line); display: flex; align-items: center; justify-content: center;
+    font-family: var(--af-font-mono); font-size: 0.8rem; color: var(--af-accent);
+  }
+  .install-step .n::before { content: counter(install); }
+  .install-step p { margin: 0; color: var(--af-text-muted); line-height: 1.55; }
+  .install-step p strong { color: var(--af-text); }
+
+  footer { padding: 3rem 0 4rem; text-align: center; color: var(--af-text-muted); font-size: 0.9rem; }
+  footer a { text-decoration: underline; text-decoration-color: var(--af-line); text-underline-offset: 3px; }
+
+  @media (max-width: 820px) {
+    .hero .wrap { grid-template-columns: 1fr; padding-top: 3rem; padding-bottom: 3rem; }
+    .range-layout { grid-template-columns: 1fr; }
+    .topbar-nav { display: none; }
+  }
 </style>
 </head>
 <body>
   <header class="topbar">
-    <main style="width:100%; display:flex; align-items:center; justify-content:space-between; padding:0;">
+    <div class="wrap">
       <a class="topbar-brand" href="https://tools.axeforge.io">
         <img src="./logo.svg" alt="">
-        <span>AxeForging</span>
+        <span>AxeForging<span class="sep">/</span>Heyra</span>
       </a>
-      <a class="axe-button" href="https://github.com/AxeForging/heyra">View on GitHub</a>
-    </main>
+      <nav class="topbar-nav">
+        <a class="navlink" href="#features">Features</a>
+        <a class="navlink" href="#guide">Guide</a>
+        <a class="navlink" href="#hardware">Hardware</a>
+        <a class="axe-button" href="https://github.com/AxeForging/heyra">View on GitHub</a>
+      </nav>
+    </div>
   </header>
 
-  <main>
-    <section class="hero" style="border-top:none;">
-      <img class="mark" src="./logo.svg" alt="">
-      <div class="product-name">Heyra</div>
-      <h1>Hear what matters in your home.</h1>
-      <p>
-        Dumb edge, smart server. Cheap ESP32 units stream raw audio to a
-        server that classifies it and tells Home Assistant — baby crying,
-        smoke alarm, glass breaking, someone at the door, and more. The
-        smoke alarm detector runs on-device too, so it survives a server or
-        network outage.
-      </p>
-      <a class="axe-button" href="#install">Get started</a>
-    </section>
-
-    <section id="features">
-      <div class="section-kicker">Features</div>
-      <div class="section-title">Nine ears, one brain</div>
-      <ul class="feature-list">
-        <li><strong>Baby cry</strong> — classified server-side via YAMNet</li>
-        <li><strong>Smoke alarm</strong> — on-device AND server-side, survives an outage</li>
-        <li><strong>Glass break</strong> — with a "nobody home" condition example</li>
-        <li><strong>Dog bark</strong> / <strong>Doorbell</strong></li>
-        <li><strong>Shout</strong> / <strong>Scream</strong> — split into distinct alerts</li>
-        <li><strong>"Help" / "Socorro" wake words</strong> — pipeline ready, models pending</li>
-        <li><strong>MQTT Discovery</strong> — entities appear in HA automatically</li>
-        <li><strong>Privacy-first</strong> — no audio persisted outside opt-in debug mode</li>
-        <li><strong>Any fleet size</strong> — one unit or twenty</li>
-      </ul>
-    </section>
-
-    <section id="guide">
-      <div class="section-kicker">Guide</div>
-      <div class="section-title">How it fits together</div>
-      <div class="cards">
-        <div class="glass-card"><h3>1. Firmware</h3>ESPHome on an ATOM Echo streams raw PCM over UDP and runs a Goertzel/pattern detector for smoke alarms entirely on-device.</div>
-        <div class="glass-card"><h3>2. Server</h3>A small Python service classifies the stream with YAMNet + openWakeWord and publishes events over MQTT.</div>
-        <div class="glass-card"><h3>3. Home Assistant</h3>MQTT Discovery creates the entities; automations and a dashboard ship ready to import.</div>
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <div class="kicker">Dumb edge, smart server</div>
+        <h1>Hear what matters in your home.</h1>
+        <p class="lede">
+          Cheap ESP32 units stream raw audio to a server that classifies it and
+          tells Home Assistant — baby crying, smoke alarm, glass breaking, a dog
+          barking, someone at the door. The smoke-alarm detector also runs
+          on-device, so it keeps working if the server or network goes down.
+        </p>
+        <div class="ctas">
+          <a class="axe-button glow-accent" href="#install">Get started</a>
+          <a class="btn-ghost" href="https://github.com/AxeForging/heyra">Source on GitHub</a>
+        </div>
       </div>
-    </section>
 
-    <section id="use-cases">
-      <div class="section-kicker">Use cases</div>
-      <div class="section-title">Why people run Heyra</div>
-      <ul class="feature-list">
-        <li><strong>Baby monitoring</strong> — get notified the moment crying starts, anywhere in the house.</li>
-        <li><strong>Accessibility / elderly care</strong> — distress-keyword detection for someone who can't reach a button.</li>
-        <li><strong>Home security backup</strong> — glass-break and smoke detection that don't depend on a subscription.</li>
-        <li><strong>General awareness</strong> — doorbell and dog-bark alerts even when you're not in the room.</li>
-      </ul>
-    </section>
+      <div>
+        <div class="feed-caption"><span class="pulse-dot"></span> Live demo — simulated feed, not a real connection</div>
+        <div class="terminal-window" id="feed-window">
+          <div class="terminal-header">
+            <span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span>
+            <span style="margin-left: 0.5rem; color: var(--af-text-muted);">heyra — acoustic/kitchen/event</span>
+          </div>
+          <div id="feed-body"></div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-    <section id="hardware">
-      <div class="section-kicker">Compatible hardware</div>
-      <div class="section-title">Built to grow</div>
+  <section id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker-sm">Features</div>
+        <h2 class="section-title">Nine ears, one brain</h2>
+        <p class="section-sub">Every event gets its own detector, its own MQTT topic, its own Home Assistant entity — nothing bundled together where one could get lost.</p>
+      </div>
+      <div class="feature-grid">
+        <div class="glass-card feature-card">
+          <div class="tone-row"><span class="feed-tone feed-tone-warn"></span><h3>Baby cry</h3></div>
+          <p>Classified server-side via YAMNet, published the moment it's confident.</p>
+        </div>
+        <div class="glass-card feature-card">
+          <div class="tone-row"><span class="feed-tone feed-tone-critical"></span><h3>Smoke alarm</h3></div>
+          <p>Dual-path: on-device <em>and</em> server-side. Survives a server or network outage.</p>
+        </div>
+        <div class="glass-card feature-card">
+          <div class="tone-row"><span class="feed-tone feed-tone-critical"></span><h3>Glass break</h3></div>
+          <p>Pairs well with a "nobody home" automation condition — ships as an example.</p>
+        </div>
+        <div class="glass-card feature-card">
+          <div class="tone-row"><span class="feed-tone feed-tone-info"></span><h3>Dog bark</h3></div>
+          <p>Its own detector, its own entity — not bundled with anything else.</p>
+        </div>
+        <div class="glass-card feature-card">
+          <div class="tone-row"><span class="feed-tone feed-tone-info"></span><h3>Doorbell</h3></div>
+          <p>Catches it even when nobody's near the actual chime.</p>
+        </div>
+        <div class="glass-card feature-card">
+          <div class="tone-row"><span class="feed-tone feed-tone-warn"></span><h3>Shout &amp; scream</h3></div>
+          <p>Split into two distinct alerts, not folded into one bucket — a scream escalates differently than a shout.</p>
+        </div>
+        <div class="glass-card feature-card provisional">
+          <div class="tone-row"><span class="feed-tone feed-tone-warn"></span><h3>"Help" / "Socorro"</h3><span class="badge">Provisional</span></div>
+          <p>Wake-word pipeline is wired end-to-end; real trained models are the next step.</p>
+        </div>
+        <div class="glass-card feature-card">
+          <div class="tone-row"><span class="feed-tone feed-tone-info"></span><h3>MQTT Discovery</h3></div>
+          <p>Entities appear in Home Assistant automatically — no manual YAML.</p>
+        </div>
+        <div class="glass-card feature-card">
+          <div class="tone-row"><span class="feed-tone feed-tone-info"></span><h3>Privacy-first</h3></div>
+          <p>No audio persisted anywhere outside an explicit opt-in debug mode.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="guide">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker-sm">Guide</div>
+        <h2 class="section-title">How it fits together</h2>
+      </div>
+      <div class="guide-flow">
+        <div class="glass-card guide-step">
+          <div class="num">01</div>
+          <h3>Firmware</h3>
+          <p>ESPHome on an ATOM Echo streams raw PCM over UDP and runs a Goertzel pattern detector for smoke alarms entirely on-device.</p>
+        </div>
+        <div class="glass-card guide-step">
+          <div class="num">02</div>
+          <h3>Server</h3>
+          <p>YAMNet + openWakeWord classify the stream and publish events over MQTT with hysteresis, not raw noise.</p>
+        </div>
+        <div class="glass-card guide-step">
+          <div class="num">03</div>
+          <h3>Home Assistant</h3>
+          <p>MQTT Discovery creates the entities. Automations and a dashboard ship ready to import.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="mic-range">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker-sm">Detection range</div>
+        <h2 class="section-title">How far does it hear?</h2>
+        <p class="section-sub">Heyra hasn't run its distance calibration pass yet (Phase 4, not started) — so instead of a made-up meter figure, here's the honest picture: three room-relative zones, same categories Heyra's own calibration plan will test against.</p>
+      </div>
+      <div class="range-layout">
+        <div class="range-diagram">
+          <svg viewBox="0 0 320 320" width="320" height="320" role="img" aria-label="Diagram of three room-relative detection zones around a Heyra unit">
+            <circle cx="160" cy="160" r="150" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="4 6" opacity="0.55"/>
+            <circle cx="160" cy="160" r="100" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="4 6" opacity="0.7"/>
+            <circle cx="160" cy="160" r="48" fill="color-mix(in srgb, var(--af-accent) 14%, transparent)" stroke="var(--af-accent)" stroke-width="1.5"/>
+            <circle cx="160" cy="160" r="5" fill="var(--af-accent)"/>
+            <text x="160" y="140" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#ffffff">unit</text>
+            <text x="160" y="100" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#94a3b8">same room</text>
+            <text x="160" y="52" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#94a3b8">adjacent room</text>
+            <text x="160" y="4" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#94a3b8">through door</text>
+          </svg>
+        </div>
+        <div>
+          <div class="range-legend">
+            <div class="range-legend-item">
+              <span class="range-swatch" style="background: var(--af-accent);"></span>
+              <div><h4>Same room</h4><p>Where every event type has been exercised so far — loud, distinct sounds (smoke alarm, scream, shout) are the reliable case today.</p></div>
+            </div>
+            <div class="range-legend-item">
+              <span class="range-swatch" style="background: #22d3ee;"></span>
+              <div><h4>Adjacent room</h4><p>Target scenario for Phase 4 — expected to work for louder events, not yet walked and measured.</p></div>
+            </div>
+            <div class="range-legend-item">
+              <span class="range-swatch" style="background: #a78bfa;"></span>
+              <div><h4>Through a door</h4><p>Hardest case, also a Phase 4 target — depends heavily on the specific door/wall.</p></div>
+            </div>
+          </div>
+          <div class="range-caption">
+            <strong>Illustrative, not measured.</strong> The mic (Knowles SPM1423) has no distance spec — no MEMS mic datasheet states one, range is a room-acoustics question, not a component spec. Heyra's own calibration pass (walking the house per event class) is planned but hasn't run yet.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="use-cases">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker-sm">Use cases</div>
+        <h2 class="section-title">Why people run Heyra</h2>
+      </div>
+      <div class="usecase-grid">
+        <div class="glass-card usecase-card">
+          <h3>Baby monitoring</h3>
+          <p>Get notified the moment crying starts, anywhere in the house.</p>
+        </div>
+        <div class="glass-card usecase-card">
+          <h3>Accessibility &amp; elderly care</h3>
+          <p>Distress-keyword detection for someone who can't reach a button.</p>
+        </div>
+        <div class="glass-card usecase-card">
+          <h3>Home security backup</h3>
+          <p>Glass-break and smoke detection that don't depend on a subscription.</p>
+        </div>
+        <div class="glass-card usecase-card">
+          <h3>General awareness</h3>
+          <p>Doorbell and dog-bark alerts even when you're not in the room.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="hardware">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker-sm">Compatible hardware</div>
+        <h2 class="section-title">Built to grow</h2>
+      </div>
       <table>
         <tr><th>Board</th><th>Status</th></tr>
         <tr><td>M5Stack ATOM Echo</td><td>Verified, in production use</td></tr>
       </table>
-      <p style="color:var(--af-text-muted)">
-        See <code>firmware/boards/README.md</code> in the repo for the
-        hardware contract a new board profile needs to satisfy.
+      <p style="color: var(--af-text-muted); font-size: 0.9rem; margin-top: 1rem;">
+        See <code>firmware/boards/README.md</code> in the repo for the hardware
+        contract a new board profile needs to satisfy.
       </p>
-    </section>
+    </div>
+  </section>
 
-    <section id="install">
-      <div class="section-kicker">Install</div>
-      <div class="section-title">Add it to Home Assistant</div>
-      <ol style="color:var(--af-text-muted)">
-        <li>Settings → Add-ons → Add-on Store → ⋮ → Repositories</li>
-        <li>Add <code>https://github.com/AxeForging/heyra</code></li>
-        <li>Install <strong>Heyra Listener</strong> (and <strong>Heyra Flasher</strong> if you're flashing new units)</li>
-      </ol>
+  <section id="install">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker-sm">Install</div>
+        <h2 class="section-title">Add it to Home Assistant</h2>
+      </div>
+      <div class="install-steps">
+        <div class="install-step"><span class="n"></span><p>Settings → Add-ons → Add-on Store → <strong>⋮</strong> → Repositories</p></div>
+        <div class="install-step"><span class="n"></span><p>Add <code>https://github.com/AxeForging/heyra</code></p></div>
+        <div class="install-step"><span class="n"></span><p>Install the <strong>Heyra</strong> Add-on — detection service plus a USB firmware-flashing wizard in its Ingress panel, one install, no dev machine needed.</p></div>
+      </div>
       <a class="axe-button" href="https://github.com/AxeForging/heyra#install">Full instructions on GitHub</a>
-    </section>
-  </main>
+    </div>
+  </section>
 
   <footer>
     <p>Built by <a href="https://github.com/murilopmachado">Murilo Machado</a> and the
        <a href="https://github.com/AxeForging">AxeForging</a> team.</p>
     <p>Check out our other tools at <a href="https://tools.axeforge.io">tools.axeforge.io</a>.</p>
   </footer>
+
+<script>
+(function () {
+  var EVENTS = [
+    { room: "kitchen", event: "baby_cry",   label: "Baby cry detected",                    tone: "warn" },
+    { room: "kitchen", event: "smoke_alarm",label: "Smoke alarm — on-device backup active", tone: "critical" },
+    { room: "kitchen", event: "dog_bark",   label: "Dog bark detected",                     tone: "info" },
+    { room: "kitchen", event: "doorbell",   label: "Doorbell",                               tone: "info" },
+    { room: "kitchen", event: "glass_break",label: "Glass break detected",                  tone: "critical" },
+    { room: "kitchen", event: "shout",      label: "Shout detected",                         tone: "warn" },
+    { room: "kitchen", event: "scream",     label: "Scream detected",                        tone: "critical" }
+  ];
+
+  var body = document.getElementById("feed-body");
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var MAX_LINES = 6;
+  var i = 0;
+
+  function pad(n) { return n < 10 ? "0" + n : "" + n; }
+
+  function addLine() {
+    var e = EVENTS[i % EVENTS.length];
+    i++;
+    var now = new Date(1700000000000 + i * 1000 * 137); // deterministic, no Date.now()/random needed for a decorative loop
+    var ts = pad(now.getUTCHours()) + ":" + pad(now.getUTCMinutes()) + ":" + pad(now.getUTCSeconds());
+    var line = document.createElement("div");
+    line.className = "feed-line";
+    line.innerHTML =
+      '<span class="ts">' + ts + '</span>' +
+      '<span class="feed-tone feed-tone-' + e.tone + '"></span>' +
+      '<span class="label">' + e.label + '</span>' +
+      '<span class="room">' + e.room + '</span>';
+    body.appendChild(line);
+    while (body.children.length > MAX_LINES) {
+      body.removeChild(body.firstChild);
+    }
+  }
+
+  for (var seed = 0; seed < 4; seed++) addLine();
+
+  if (!reduced) {
+    setInterval(addLine, 2200);
+  }
+})();
+</script>
 </body>
 </html>
