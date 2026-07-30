@@ -20,7 +20,11 @@
 - **Phase 2 (server: YAMNet + openWakeWord + MQTT)** — done, verified against the live
   atom-echo-01 unit. `cd server && docker compose up --build -d` runs it (own dedicated
   mosquitto, not shared with gjallarhorn).
-  - 31/31 unit tests pass (`server/listener/tests/`, no hardware/Docker needed).
+  - 32/32 unit tests pass (`server/listener/tests/`, no hardware/Docker needed).
+  - New `scream` event (YAMNet class 11, "Screaming") split out of `shout` (was folded in as
+    `[6, 9, 11]`, now `shout` is `[6, 9]` and `scream` owns 11 exclusively) — avoids double
+    notification for the same sound. Thresholds provisional pending Phase 4, same as every
+    other event.
   - `tflite-runtime==2.14.0`'s compiled extension is ABI-incompatible with numpy 2.x
     (predates numpy 2.0) — pinned `numpy==1.26.4`, not the originally-planned 2.2.6.
   - Verified live: UDP ingest (~32 pkt/s, zero gaps, `/healthz` correct), real YAMNet

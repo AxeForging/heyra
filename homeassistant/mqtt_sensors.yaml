@@ -83,6 +83,18 @@ mqtt:
       payload_not_available: "offline"
       device: {identifiers: ["heyra_kitchen"], name: "Heyra Kitchen", manufacturer: "Heyra"}
 
+    - name: "Kitchen Scream"
+      unique_id: heyra_kitchen_scream
+      state_topic: "acoustic/kitchen/event"
+      value_template: "{{ 'ON' if value_json.event == 'scream' else this.state }}"
+      payload_on: "ON"
+      payload_off: "OFF"
+      off_delay: 30
+      availability_topic: "acoustic/kitchen/status"
+      payload_available: "online"
+      payload_not_available: "offline"
+      device: {identifiers: ["heyra_kitchen"], name: "Heyra Kitchen", manufacturer: "Heyra"}
+
     - name: "Kitchen Distress Keyword"
       unique_id: heyra_kitchen_distress_keyword
       state_topic: "acoustic/kitchen/event"

@@ -62,9 +62,16 @@ classify:
       diagnostics_only: false
       ha: {off_delay_s: 15}
     shout:
-      class_indices: [6, 9, 11]   # "Shout", "Yell", "Screaming"
+      class_indices: [6, 9]   # "Shout", "Yell"
       threshold: 0.55
       hysteresis: {hits: 3, window_s: 8}
+      cooldown_s: 60
+      diagnostics_only: false
+      ha: {off_delay_s: 30}
+    scream:
+      class_indices: [11]   # "Screaming"
+      threshold: 0.55
+      hysteresis: {hits: 2, window_s: 6}   # more sensitive than shout -- usually shorter, more urgent
       cooldown_s: 60
       diagnostics_only: false
       ha: {off_delay_s: 30}

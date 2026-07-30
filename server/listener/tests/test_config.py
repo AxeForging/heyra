@@ -1,8 +1,11 @@
 import textwrap
+from pathlib import Path
 
 import pytest
 
 from listener.config import ConfigError, load_config
+
+REAL_CONFIG_PATH = Path(__file__).resolve().parents[2] / "listener" / "config.yaml"
 
 BASE_YAML = """
 ingest: {port: 6969}
@@ -64,6 +67,15 @@ overrides:
     path = write_yaml(tmp_path, text)
     with pytest.raises(ConfigError):
         load_config(path)
+
+
+def test_scream_split_from_shout_in_real_config():
+    # Regression guard for the shout/scream split: class index 11 ("Screaming")
+    # must belong to scream only, not double-counted in shout.
+    cfg = load_config(str(REAL_CONFIG_PATH))
+    assert cfg.events["shout"].class_indices == (6, 9)
+    assert cfg.events["scream"].class_indices == (11,)
+    assert cfg.events["scream"].diagnostics_only is False
 
 
 def test_missing_threshold_raises(tmp_path):

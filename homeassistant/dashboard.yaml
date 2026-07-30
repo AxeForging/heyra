@@ -45,6 +45,7 @@ views:
           - binary_sensor.heyra_kitchen_dog_bark
           - binary_sensor.heyra_kitchen_doorbell
           - binary_sensor.heyra_kitchen_shout
+          - binary_sensor.heyra_kitchen_scream
           - binary_sensor.heyra_kitchen_distress_keyword
         hours_to_show: 24
       # --- end Kitchen block ---

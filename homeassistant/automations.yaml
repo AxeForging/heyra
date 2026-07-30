@@ -111,6 +111,27 @@
         effect: Strobe
   mode: single
 
+- id: heyra_scream
+  alias: "Heyra: scream"
+  description: >-
+    Screaming could be play, not always distress -- single notify + red LED,
+    no repeat-until-ack (unlike distress_keyword). Adjust if you want it
+    escalated further.
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.heyra_kitchen_scream
+      to: "on"
+  action:
+    - service: notify.notify
+      data:
+        message: "😱 Scream detected (kitchen)"
+    - service: light.turn_on
+      target:
+        entity_id: light.atom_echo_01_status_led
+      data:
+        rgb_color: [255, 0, 0]
+  mode: single
+
 - id: heyra_distress_keyword
   alias: "Heyra: distress keyword [PROVISIONAL]"
   description: >-
