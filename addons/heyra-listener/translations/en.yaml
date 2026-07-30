@@ -1,0 +1,4 @@
+configuration:
+  units:
+    name: Units
+    description: One entry per ATOM Echo unit -- unit_id must match the firmware's unit_id substitution.

@@ -43,7 +43,8 @@ async def main() -> None:
     gate = HysteresisGate(config.gate_rules)
 
     publisher = MqttPublisher(
-        config.mqtt.host, config.mqtt.port, config.mqtt.client_id, config.mqtt.discovery_prefix
+        config.mqtt.host, config.mqtt.port, config.mqtt.client_id, config.mqtt.discovery_prefix,
+        username=config.mqtt.username, password=config.mqtt.password,
     )
 
     loop = asyncio.get_running_loop()

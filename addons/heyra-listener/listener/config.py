@@ -34,6 +34,8 @@ class MqttConfig:
     port: int
     discovery_prefix: str
     client_id: str
+    username: str | None = None
+    password: str | None = None
 
 
 @dataclass(frozen=True)
@@ -143,6 +145,8 @@ def load_config(path: str) -> Config:
         port=int(mqtt_raw.get("port", 1883)),
         discovery_prefix=mqtt_raw.get("discovery_prefix", "homeassistant"),
         client_id=mqtt_raw.get("client_id", "heyra-listener"),
+        username=mqtt_raw.get("username"),
+        password=mqtt_raw.get("password"),
     )
 
     debug_raw = raw.get("debug", {})

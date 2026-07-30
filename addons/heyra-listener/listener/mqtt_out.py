@@ -18,18 +18,24 @@ log = logging.getLogger("listener.mqtt_out")
 
 
 class MqttPublisher:
-    def __init__(self, host: str, port: int, client_id: str, discovery_prefix: str):
+    def __init__(self, host: str, port: int, client_id: str, discovery_prefix: str,
+                 username: str | None = None, password: str | None = None):
         self.host = host
         self.port = port
         self.client_id = client_id
         self.discovery_prefix = discovery_prefix
+        self.username = username
+        self.password = password
         self._client: aiomqtt.Client | None = None
 
     async def run(self) -> None:
         """Reconnect loop. This instance only publishes, never subscribes."""
         while True:
             try:
-                async with aiomqtt.Client(self.host, self.port, identifier=self.client_id) as client:
+                async with aiomqtt.Client(
+                    self.host, self.port, identifier=self.client_id,
+                    username=self.username, password=self.password,
+                ) as client:
                     self._client = client
                     log.info("connected to mqtt %s:%d", self.host, self.port)
                     await asyncio.Event().wait()  # idle until cancelled or connection drops

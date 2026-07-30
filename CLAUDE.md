@@ -18,9 +18,12 @@
     real magnitude/timing readings off the device — both are explicitly flagged in-code as
     provisional pending Phase 4 calibration against an actual smoke-alarm recording.
 - **Phase 2 (server: YAMNet + openWakeWord + MQTT)** — done, verified against the live
-  atom-echo-01 unit. `cd server && docker compose up --build -d` runs it (own dedicated
-  mosquitto, not shared with gjallarhorn).
-  - 32/32 unit tests pass (`server/listener/tests/`, no hardware/Docker needed).
+  atom-echo-01 unit. Source of truth moved to `addons/heyra-listener/` (see the AxeForging
+  Add-ons entry below) — `cd server && docker compose up --build -d` still runs it locally
+  for non-HA users (builds from `../addons/heyra-listener`, own dedicated mosquitto, not
+  shared with gjallarhorn).
+  - 36/36 unit tests pass (`addons/heyra-listener/listener/tests/` +
+    `addons/heyra-listener/test_render_config.py`, no hardware/Docker needed).
   - New `scream` event (YAMNet class 11, "Screaming") split out of `shout` (was folded in as
     `[6, 9, 11]`, now `shout` is `[6, 9]` and `scream` owns 11 exclusively) — avoids double
     notification for the same sound. Thresholds provisional pending Phase 4, same as every
@@ -58,9 +61,46 @@
   placeholders. Still outstanding before the manual test in `homeassistant/README.md` can
   run: add the ESPHome integration, repoint Heyra's MQTT config at HA's existing broker.
   All entity/service names cross-checked against what `firmware/common.yaml` and
-  `server/listener/mqtt_out.py` actually expose; all 3 YAML files parse cleanly. See
-  `homeassistant/README.md` for the full checklist, including why a custom HA Add-on
-  wasn't built and how to use the official ESPHome Add-on for flashing instead of the CLI.
+  `addons/heyra-listener/listener/mqtt_out.py` actually expose; all 3 YAML files parse
+  cleanly. See `homeassistant/README.md` for the setup checklist — note this file predates
+  the AxeForging Add-ons below and its "no custom Add-on" reasoning has since been
+  superseded; `addons/heyra-listener` now covers the MQTT/config side natively.
+- **AxeForging HA Add-ons + hardware abstraction + public release** — built this session,
+  live-verified locally (not yet against a real Supervisor instance). Two Add-ons under
+  `addons/`, one repo (`repository.yaml` at root, Stage E):
+  - `addons/heyra-listener/` — the Phase 2 service, packaged as a real Add-on. `options`/
+    `schema` exposes the `units` list (HA-native Configuration UI — this is the "a view to
+    configure the units" ask from the very start of the project). `services: [mqtt:want]`
+    auto-discovers the official Mosquitto broker Add-on if installed (added real
+    username/password support to `MqttConfig`/`MqttPublisher` for this — didn't exist
+    before). `map: [addon_config:rw]` lets advanced users drop a full replacement
+    `config.yaml` for per-event tuning without a rebuild — `server/docker-compose.yml`'s
+    local dev path uses the same override mechanism via a bind mount, so both environments
+    exercise identical code. Kept `python:3.11-slim-bookworm` as the base image, not HA's
+    Alpine-based one (the numpy/tflite-runtime ABI landmine above is exactly the kind of
+    thing Alpine/musl reintroduces). Models are baked into the image (Add-on volumes can't
+    reach arbitrary host paths) — live-verified via `docker compose up --build` and a
+    standalone `docker build`, both against the real atom-echo-01 unit still streaming.
+  - `addons/heyra-flasher/` — new: compiles/flashes Heyra firmware onto units over USB from
+    an Ingress panel inside HA, instead of the `esphome` CLI from a dev machine. `uart: true`
+    (mirrors the real ESPHome Add-on's own config, confirmed via direct fetch of
+    `github.com/esphome/home-assistant-addon`). Small Starlette+uvicorn app: board dropdown
+    (from `firmware/boards/`) → unit/WiFi form → shells `esphome compile` then
+    `esphome upload`, streams output live. Needed Python 3.12 (esphome 2026.7.3's own
+    requirement) and had to pin `starlette==0.52.1`/`uvicorn==0.40.0` below esphome's own
+    `platformio` dependency's caps (`<0.53`/`<0.41`) — not a free choice, esphome's
+    transitive constraint. Docker build context can't reach outside an Add-on's own folder,
+    so `firmware/{common.yaml,boards/,components/}` are copied (not symlinked — symlinks
+    escaping the build context aren't reliably followed) into
+    `addons/heyra-flasher/firmware/` — **known duplication, keep in sync manually until a
+    better build-context solution exists.**
+  - `firmware/boards/` (Stage A prerequisite for the flasher's board dropdown), new `scream`
+    event (Stage B), `help_en`/`socorro_pt` keyword scaffolding (Stage C) — see their own
+    status lines above.
+  - Not yet done: `repository.yaml`, root `README.md`, `LICENSE`, Add-on icons (rasterized
+    from the real AxeForging brand kit), the public `github.com/AxeForging/heyra` repo
+    itself, and the GitHub Pages landing site — all planned as later stages in the same
+    session, see the plan file referenced at the top of Phase 1 for the full 6-stage plan.
 - Phase 4 (calibration) — not started.
 
 ## Frozen contract: UDP audio packet format
