@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="addons/heyra-listener/logo.png" alt="Heyra" width="250">
+  <img src="addons/heyra/logo.png" alt="Heyra" width="250">
 </p>
 
 <p align="center">
@@ -37,9 +37,8 @@ network goes down.
 
 1. In Home Assistant: **Settings → Add-ons → Add-on Store → ⋮ → Repositories**
    → add `https://github.com/AxeForging/heyra`.
-2. Install **Heyra Listener** (the detection service) and, if you're
-   flashing new units, **Heyra Flasher** (compiles/flashes firmware over
-   USB from a panel inside HA — no dev machine or CLI needed).
+2. Install the **Heyra** Add-on — detection service plus a USB firmware-
+   flashing wizard in its Ingress panel, no dev machine or CLI needed.
 3. See [`homeassistant/README.md`](homeassistant/README.md) for the full
    setup checklist (MQTT, notifications, automations).
 
@@ -56,7 +55,7 @@ for the hardware contract a new board profile needs to satisfy.
 
 ```
 firmware/          ESPHome firmware + the udp_audio_streamer component (Goertzel/T3 smoke detection)
-addons/             Home Assistant Add-ons (heyra-listener, heyra-flasher)
+addons/             Home Assistant Add-on (heyra -- listener + USB flashing wizard)
 homeassistant/      Automations, dashboard, MQTT reference config
 server/             Plain docker-compose deployment, for non-HA users
 docs/               Build plan, wake-word training runbook

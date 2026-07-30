@@ -10,21 +10,22 @@ services:
     restart: unless-stopped
 
   listener:
-    # Source of truth moved to addons/heyra-listener/ (Stage D: same image also
-    # ships as the heyra-listener HA Add-on). This compose file is kept for
-    # non-HA users who just want the raw service.
-    build: ../addons/heyra-listener
+    # Source of truth moved to addons/heyra/ (same image also ships as the merged
+    # Heyra HA Add-on -- listener + USB flashing wizard). This compose file is kept
+    # for non-HA users who just want the raw service.
+    build: ../addons/heyra
     depends_on:
       - mosquitto
     ports:
       - "6969:6969/udp"
       - "8080:8080"
+      - "8099:8099"  # ingress web app (status + flashing wizard), no HA Ingress proxy here
     volumes:
       # Mounted at the same /config/config.yaml path the Add-on's addon_config
       # map uses (see render_config.py) -- full replacement of the template,
       # not a merge, lets local dev tune events without a rebuild.
-      - ../addons/heyra-listener/listener/config.yaml:/config/config.yaml:ro
-      - ../addons/heyra-listener/models:/app/models:ro
+      - ../addons/heyra/listener/config.yaml:/config/config.yaml:ro
+      - ../addons/heyra/models:/app/models:ro
       - listener-debug:/app/debug
     healthcheck:
       test: ["CMD", "python", "-c",

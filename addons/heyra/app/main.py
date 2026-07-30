@@ -23,6 +23,9 @@ from starlette.routing import Route
 
 FIRMWARE_DIR = Path(os.environ.get("HEYRA_FIRMWARE_DIR", "/app/firmware"))
 BOARDS_DIR = FIRMWARE_DIR / "boards"
+# esphome lives in its own Python 3.12 venv (see Dockerfile) -- the listener/ingress
+# app runs under 3.11, doesn't need to share an interpreter with a CLI subprocess.
+ESPHOME_BIN = os.environ.get("HEYRA_ESPHOME_BIN", "/opt/esphome-venv/bin/esphome")
 
 UNIT_TEMPLATE = """substitutions:
   room: {room}
@@ -52,11 +55,18 @@ def list_serial_ports() -> list[str]:
 
 
 async def index(request):
+    # Deliberately a simple links page, not a live per-unit dashboard -- that would need
+    # threading listener.main's in-process unit state through to this ingress app, real
+    # added complexity for a nice-to-have. /healthz already gives live per-unit JSON.
+    return HTMLResponse(STATUS_HTML)
+
+
+async def flash_page(request):
     boards = list_boards()
     ports = list_serial_ports()
     board_options = "".join(f'<option value="{b}">{b}</option>' for b in boards)
     port_options = "".join(f'<option value="{p}">{p}</option>' for p in ports) or '<option value="">No serial device detected -- plug one in and reload</option>'
-    return HTMLResponse(INDEX_HTML.format(board_options=board_options, port_options=port_options))
+    return HTMLResponse(FLASH_HTML.format(board_options=board_options, port_options=port_options))
 
 
 async def api_boards(request):
@@ -98,8 +108,8 @@ async def api_flash(request):
     async def stream_flash():
         try:
             for step_label, cmd in (
-                ("compile", ["esphome", "compile", str(unit_yaml)]),
-                ("upload", ["esphome", "upload", str(unit_yaml), "--device", port]),
+                ("compile", [ESPHOME_BIN, "compile", str(unit_yaml)]),
+                ("upload", [ESPHOME_BIN, "upload", str(unit_yaml), "--device", port]),
             ):
                 yield f"\n=== {step_label} ===\n".encode()
                 proc = await asyncio.create_subprocess_exec(
@@ -118,7 +128,25 @@ async def api_flash(request):
     return StreamingResponse(stream_flash(), media_type="text/plain")
 
 
-INDEX_HTML = """<!doctype html>
+STATUS_HTML = """<!doctype html>
+<html><head><meta charset="utf-8"><title>Heyra</title>
+<style>
+  :root { --accent: #ff4e4e; }
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 3rem auto; padding: 0 1rem; }
+  h1 { border-left: 4px solid var(--accent); padding-left: 0.6rem; }
+  a.card { display: block; padding: 1rem; margin-top: 1rem; border: 1px solid #333; border-radius: 6px; text-decoration: none; color: inherit; }
+  a.card:hover { border-color: var(--accent); }
+  a.card strong { display: block; margin-bottom: 0.3rem; }
+  a.card span { color: #888; font-size: 0.9rem; }
+</style></head>
+<body>
+<h1>Heyra</h1>
+<p>Acoustic event detection + firmware flashing, by AxeForging.</p>
+<a class="card" href="/flash"><strong>Flash a unit</strong><span>Compile and flash Heyra firmware onto a new ATOM Echo over USB</span></a>
+<div class="card"><strong>Live status</strong><span>Per-unit online/offline JSON at <code>&lt;this host&gt;:8080/healthz</code> (not proxied through Ingress -- open it directly on your network)</span></div>
+</body></html>"""
+
+FLASH_HTML = """<!doctype html>
 <html><head><meta charset="utf-8"><title>Heyra Flasher</title>
 <style>
   :root {{ --accent: #ff4e4e; }}
@@ -167,6 +195,7 @@ document.getElementById('f').addEventListener('submit', async (e) => {{
 
 app = Starlette(routes=[
     Route("/", index),
+    Route("/flash", flash_page),
     Route("/api/boards", api_boards),
     Route("/api/ports", api_ports),
     Route("/api/flash", api_flash, methods=["POST"]),

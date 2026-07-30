@@ -11,7 +11,7 @@ mqtt:
   host: mosquitto
   port: 1883
   discovery_prefix: homeassistant
-  client_id: heyra-listener
+  client_id: heyra
 
 debug:
   enabled: false

@@ -53,7 +53,7 @@ training data are English-only. Training real models needs real effort:
    notebook downloads AudioSet/FMA/room-impulse-response sets for this).
 4. Output is a `.tflite` model. Drop it at
    `server/models/openwakeword/help_en.tflite` (or the equivalent path
-   inside `addons/heyra-listener/models/` once the Add-on split lands) — no
+   inside `addons/heyra/models/` for the Add-on build) — no
    code or config changes needed, `main.py` picks it up automatically once
    the file exists.
 

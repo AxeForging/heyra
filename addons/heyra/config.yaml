@@ -1,0 +1,29 @@
+name: Heyra
+version: "0.2.0"
+slug: heyra
+description: Acoustic event detection (YAMNet + openWakeWord) + USB firmware flashing for the Heyra ATOM Echo mesh, by AxeForging
+url: https://github.com/AxeForging/heyra
+arch:
+  - aarch64
+  - amd64
+startup: services
+boot: auto
+init: true
+uart: true
+host_network: true
+ingress: true
+ingress_port: 0
+panel_icon: mdi:ear-hearing
+panel_title: Heyra
+services:
+  - mqtt:want
+map:
+  - addon_config:rw
+options:
+  units:
+    - unit_id: 1
+      room: kitchen
+schema:
+  units:
+    - unit_id: int
+      room: str
