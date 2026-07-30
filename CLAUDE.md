@@ -97,10 +97,14 @@
   - `firmware/boards/` (Stage A prerequisite for the flasher's board dropdown), new `scream`
     event (Stage B), `help_en`/`socorro_pt` keyword scaffolding (Stage C) — see their own
     status lines above.
-  - Not yet done: `repository.yaml`, root `README.md`, `LICENSE`, Add-on icons (rasterized
-    from the real AxeForging brand kit), the public `github.com/AxeForging/heyra` repo
-    itself, and the GitHub Pages landing site — all planned as later stages in the same
-    session, see the plan file referenced at the top of Phase 1 for the full 6-stage plan.
+  - `repository.yaml`, root `README.md`, `LICENSE` (MIT), and both Add-ons' `icon.png`/
+    `logo.png` are done — icons rasterized from the real AxeForging brand kit
+    (`~/workspace/axeforging/branding/logo.svg`/`wordmark.svg`) via ImageMagick, with a
+    Heyra-specific accent color (`#ff3b3b`) substituted for the kit's default forge-orange,
+    same "one custom accent per project" pattern as `rsvp-m5`'s own terracotta.
+  - Not yet done: the public `github.com/AxeForging/heyra` repo itself and the GitHub Pages
+    landing site — see the plan file referenced at the top of Phase 1 for the full 6-stage
+    plan.
 - Phase 4 (calibration) — not started.
 
 ## Frozen contract: UDP audio packet format
