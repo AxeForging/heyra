@@ -1,6 +1,8 @@
-# Heyra automations. See README.md before importing -- several values below
-# are placeholders (notify.REPLACE_ME, notify.telegram) that must be
-# replaced with your actual HA service names.
+# Heyra automations. Notify calls use notify.notify (HA's built-in group
+# service -- broadcasts to every registered notify target). Live-checked
+# against a real instance: no telegram_bot component, but 3 mobile_app
+# targets registered (see README.md). Retarget individual automations to a
+# specific notify.mobile_app_* if you want per-person routing instead.
 #
 # Per-unit action lists (play_alert / light.turn_on targets) are written out
 # explicitly, one line per unit, matching the manual-mirror convention used
@@ -24,7 +26,7 @@
         - binary_sensor.heyra_kitchen_smoke_alarm
       to: "on"
   action:
-    - service: notify.telegram  # REPLACE_ME: your real telegram notify service
+    - service: notify.notify
       data:
         message: "🔥 Smoke alarm detected (kitchen)"
     - service: esphome.atom_echo_01_play_alert
@@ -54,7 +56,7 @@
     - service: light.turn_off
       target:
         entity_id: light.atom_echo_01_status_led
-    - service: notify.telegram  # REPLACE_ME
+    - service: notify.notify
       data:
         message: "Acked by {{ trigger.event.data.room }}"
   mode: single
@@ -76,7 +78,7 @@
           after: input_datetime.quiet_hours_start
           before: input_datetime.quiet_hours_end
   action:
-    - service: notify.REPLACE_ME  # your chosen notify target(s)
+    - service: notify.notify
       data:
         message: "Baby crying (kitchen)"
     - service: light.turn_on
@@ -98,7 +100,7 @@
     - condition: template
       value_template: "{{ states.person | selectattr('state', 'eq', 'home') | list | length == 0 }}"
   action:
-    - service: notify.telegram  # REPLACE_ME
+    - service: notify.notify
       data:
         message: "Glass break detected (kitchen) -- nobody home"
     - service: light.turn_on
@@ -122,7 +124,7 @@
   action:
     - repeat:
         sequence:
-          - service: notify.telegram  # REPLACE_ME, should be high-priority/critical channel
+          - service: notify.notify
             data:
               message: "🚨 Distress keyword detected (kitchen)"
           - wait_for_trigger:
@@ -147,7 +149,7 @@
       to: "on"
       id: dog_bark
   action:
-    - service: notify.REPLACE_ME
+    - service: notify.notify
       data:
         message: >-
           {% if trigger.id == 'doorbell' %}Doorbell (kitchen){% else %}Dog barking (kitchen){% endif %}

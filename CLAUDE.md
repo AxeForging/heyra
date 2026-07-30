@@ -36,15 +36,20 @@
   - `keyword_spotting` uses openWakeWord's stock `hey_jarvis` model as a placeholder —
     `distress_keyword` is NOT a trained "help help" model yet, by design (see Context in
     the Phase 2 plan). Swapping in a real one is a `config.yaml` change, no rebuild.
-- **Phase 3 (Home Assistant integration)** — draft generated, **not live-verified**. A real
-  HA instance exists (`hass-mcp` MCP config has a URL+token) but is on a different subnet
-  (`192.168.31.0/24`) unreachable from this dev machine (`192.168.1.0/24`); no Telegram bot
-  is connected anywhere on this machine either (gjallarhorn's `.env` has empty token/chat_id).
-  So `homeassistant/` is config-file generation for manual import, not something proven
-  end-to-end here. See `homeassistant/README.md` for the required setup checklist and manual
-  test steps before relying on it. All entity/service names cross-checked against what
-  `firmware/common.yaml` and `server/listener/mqtt_out.py` actually expose; all 3 YAML files
-  parse cleanly, but nothing has run against a live HA instance.
+- **Phase 3 (Home Assistant integration)** — config generated, **live-checked but not
+  live-fired**. The real HA instance is `http://homeassistant.local:8123/` (HA 2026.7.3,
+  Home Assistant OS/Supervised, same subnet as this dev machine — the earlier
+  `192.168.31.0/24` address in `hass-mcp`'s MCP config was stale). Queried live via a
+  Long-Lived Access Token: `hassio` present, `esphome` absent (integration not added yet),
+  `mqtt` present but pointed at a different broker than Heyra's dedicated mosquitto,
+  `telegram_bot` absent, `mobile_app` present with 3 registered devices. `automations.yaml`
+  now calls `notify.notify` (real, broadcasts to all 3 phones) instead of Telegram
+  placeholders. Still outstanding before the manual test in `homeassistant/README.md` can
+  run: add the ESPHome integration, repoint Heyra's MQTT config at HA's existing broker.
+  All entity/service names cross-checked against what `firmware/common.yaml` and
+  `server/listener/mqtt_out.py` actually expose; all 3 YAML files parse cleanly. See
+  `homeassistant/README.md` for the full checklist, including why a custom HA Add-on
+  wasn't built and how to use the official ESPHome Add-on for flashing instead of the CLI.
 - Phase 4 (calibration) — not started.
 
 ## Frozen contract: UDP audio packet format
