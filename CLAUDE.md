@@ -119,6 +119,33 @@
     (Pages, `build_type: workflow`, deployed successfully on first push, verified reachable
     with a real `curl`). Final secrets check re-run immediately before the push (clean, no
     real credentials ever committed, confirmed via `git log --all`).
+  - **Real install attempted on the owner's actual HA instance — two real bugs found and
+    fixed, not caught by any of the local Docker testing above:**
+    1. Install hung/took a very long time — Supervisor was building the image from source
+       on the owner's own (Pi-class) device, no `image:` key existed. Fixed: prebuilt
+       multi-arch (`amd64`+`arm64`) image published to `ghcr.io/axeforging/heyra` via
+       `.github/workflows/publish-addon.yml`, pattern confirmed against the real
+       `esphome/esphome` release workflow (push-by-digest per arch on native ARM runners,
+       `docker buildx imagetools create` to stitch the manifest). First run succeeded
+       (`docker buildx imagetools inspect` confirmed both platforms) — **but the ghcr.io
+       package published private by default; Supervisor needs unauthenticated pulls, so
+       someone needs to flip it to Public at
+       `github.com/orgs/AxeForging/packages/container/heyra/settings` before install will
+       actually work** — flagged to the owner, not yet confirmed done.
+    2. Ingress returned 502 even though the Add-on showed "Running" — confirmed via the
+       owner's real log. Root cause: `host_network: true` + `ingress_port: 0` means
+       Supervisor assigns a real port from its own dynamic range (62000-65500) and expects
+       it fetched via `GET http://supervisor/addons/self/info` — `run.py` was binding to a
+       hardcoded 8099 fallback instead (an invented `INGRESS_PORT` env var that doesn't
+       exist). Fixed in `get_ingress_port()`, confirmed against the real ESPHome Add-on's
+       own startup code. Added `hassio_api: true` for the token scope.
+    - Also visible in that same real log: MQTT retrying forever against `mosquitto` (a
+      hostname that only resolves in local `docker-compose`, not on a real HA instance) —
+      not a code bug, but DOCS.md's "if you have a broker" aside was too easy to miss;
+      now states plainly near the top that a real broker (recommended: the official
+      Mosquitto Add-on, auto-discovered via `mqtt:want`) is required.
+    - `logo.png` redesigned to actually say "Heyra" (was the generic AxeForge company
+      wordmark, same file used everywhere else) — owner flagged this directly.
 - Phase 4 (calibration) — not started.
 
 ## Frozen contract: UDP audio packet format
