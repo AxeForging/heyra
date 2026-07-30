@@ -1,0 +1,154 @@
+# Heyra automations. See README.md before importing -- several values below
+# are placeholders (notify.REPLACE_ME, notify.telegram) that must be
+# replaced with your actual HA service names.
+#
+# Per-unit action lists (play_alert / light.turn_on targets) are written out
+# explicitly, one line per unit, matching the manual-mirror convention used
+# everywhere else in this repo (see CLAUDE.md's "Unit count" note). Only
+# atom-echo-01/kitchen exists today -- add a line per new unit.
+#
+# All binary_sensor.heyra_* triggers fire on the rising edge only ("to: on")
+# -- Phase 2 never publishes an explicit "off" MQTT message, entities
+# auto-clear locally in HA via off_delay.
+
+- id: heyra_smoke_alarm_alert
+  alias: "Heyra: smoke alarm alert"
+  description: >-
+    Fires on either the on-device T3 detector (survives a server/network
+    outage) or the server-side YAMNet classification -- whichever sees it
+    first. Sounds every unit, flashes LEDs red, and notifies.
+  trigger:
+    - platform: state
+      entity_id:
+        - binary_sensor.atom_echo_01_smoke_alarm_detected
+        - binary_sensor.heyra_kitchen_smoke_alarm
+      to: "on"
+  action:
+    - service: notify.telegram  # REPLACE_ME: your real telegram notify service
+      data:
+        message: "🔥 Smoke alarm detected (kitchen)"
+    - service: esphome.atom_echo_01_play_alert
+      data:
+        tone_id: 0
+    - service: light.turn_on
+      target:
+        entity_id: light.atom_echo_01_status_led
+      data:
+        rgb_color: [255, 0, 0]
+        effect: Strobe
+  mode: single
+
+- id: heyra_smoke_alarm_ack
+  alias: "Heyra: smoke alarm ack"
+  description: "Any unit's button press silences the beacon response."
+  trigger:
+    - platform: event
+      event_type: esphome.button_ack
+  action:
+    - service: light.turn_on
+      target:
+        entity_id: light.atom_echo_01_status_led
+      data:
+        rgb_color: [0, 255, 0]
+    - delay: "00:00:05"
+    - service: light.turn_off
+      target:
+        entity_id: light.atom_echo_01_status_led
+    - service: notify.telegram  # REPLACE_ME
+      data:
+        message: "Acked by {{ trigger.event.data.room }}"
+  mode: single
+
+- id: heyra_baby_cry
+  alias: "Heyra: baby cry"
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.heyra_kitchen_baby_cry
+      to: "on"
+  condition:
+    # "Quiet hours respected" read as: suppress notifications during the
+    # window, not the reverse. Create input_datetime.quiet_hours_start/_end
+    # helpers first (defaults assumed 22:00/07:00) -- see README. HA's time
+    # condition handles the overnight wraparound (start > end) natively.
+    - condition: not
+      conditions:
+        - condition: time
+          after: input_datetime.quiet_hours_start
+          before: input_datetime.quiet_hours_end
+  action:
+    - service: notify.REPLACE_ME  # your chosen notify target(s)
+      data:
+        message: "Baby crying (kitchen)"
+    - service: light.turn_on
+      target:
+        entity_id: light.atom_echo_01_status_led
+      data:
+        rgb_color: [255, 191, 0]
+  mode: single
+
+- id: heyra_glass_break
+  alias: "Heyra: glass break"
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.heyra_kitchen_glass_break
+      to: "on"
+  condition:
+    # Generic "nobody home" check over every person.* entity -- works with
+    # zero setup. Swap for your own zone/group entity if you have one.
+    - condition: template
+      value_template: "{{ states.person | selectattr('state', 'eq', 'home') | list | length == 0 }}"
+  action:
+    - service: notify.telegram  # REPLACE_ME
+      data:
+        message: "Glass break detected (kitchen) -- nobody home"
+    - service: light.turn_on
+      target:
+        entity_id: light.atom_echo_01_status_led
+      data:
+        rgb_color: [255, 0, 0]
+        effect: Strobe
+  mode: single
+
+- id: heyra_distress_keyword
+  alias: "Heyra: distress keyword [PROVISIONAL]"
+  description: >-
+    Still running openWakeWord's stock placeholder model (Phase 2), not a
+    trained "help help" model -- see CLAUDE.md. Wired correctly, semantically
+    provisional. Repeats the notification every 60s until any button ack.
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.heyra_kitchen_distress_keyword
+      to: "on"
+  action:
+    - repeat:
+        sequence:
+          - service: notify.telegram  # REPLACE_ME, should be high-priority/critical channel
+            data:
+              message: "🚨 Distress keyword detected (kitchen)"
+          - wait_for_trigger:
+              - platform: event
+                event_type: esphome.button_ack
+            timeout: "00:01:00"
+        until:
+          - condition: template
+            value_template: "{{ wait.trigger is not none }}"
+  mode: single
+
+- id: heyra_doorbell_and_dog_bark
+  alias: "Heyra: doorbell and dog bark"
+  description: "Normal notifications only -- no beacon/LED, per spec."
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.heyra_kitchen_doorbell
+      to: "on"
+      id: doorbell
+    - platform: state
+      entity_id: binary_sensor.heyra_kitchen_dog_bark
+      to: "on"
+      id: dog_bark
+  action:
+    - service: notify.REPLACE_ME
+      data:
+        message: >-
+          {% if trigger.id == 'doorbell' %}Doorbell (kitchen){% else %}Dog barking (kitchen){% endif %}
+  mode: queued

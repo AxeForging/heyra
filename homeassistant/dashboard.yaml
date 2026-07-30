@@ -1,0 +1,50 @@
+# Lovelace YAML-mode dashboard. Import as a new dashboard (Settings ->
+# Dashboards -> Add Dashboard -> "Take control" -> paste this as raw config),
+# or merge the cards into an existing dashboard.
+#
+# One card block per unit -- Lovelace YAML mode has no loops, so adding a
+# unit means copying the "Kitchen" entities/button cards below, renaming, and
+# swapping entity IDs (same manual-mirror convention as automations.yaml).
+
+title: Heyra
+views:
+  - title: Overview
+    path: heyra
+    icon: mdi:ear-hearing
+    cards:
+      # --- Kitchen (atom-echo-01) -- copy this block per additional unit ---
+      - type: entities
+        title: "Kitchen — atom-echo-01"
+        entities:
+          - entity: switch.atom_echo_01_streaming
+            name: Streaming (privacy toggle)
+          - entity: sensor.heyra_kitchen_status
+            name: Server-side status
+          - entity: binary_sensor.atom_echo_01_smoke_alarm_detected
+            name: Smoke alarm (on-device)
+          - entity: binary_sensor.atom_echo_01_button
+            name: Button (last press)
+          - entity: light.atom_echo_01_status_led
+            name: Status LED
+
+      - type: button
+        name: Test Alert (Kitchen)
+        icon: mdi:bell-ring
+        tap_action:
+          action: call-service
+          service: esphome.atom_echo_01_play_alert
+          service_data:
+            tone_id: 0
+
+      - type: logbook
+        title: "Kitchen — recent detections"
+        entities:
+          - binary_sensor.heyra_kitchen_baby_cry
+          - binary_sensor.heyra_kitchen_smoke_alarm
+          - binary_sensor.heyra_kitchen_glass_break
+          - binary_sensor.heyra_kitchen_dog_bark
+          - binary_sensor.heyra_kitchen_doorbell
+          - binary_sensor.heyra_kitchen_shout
+          - binary_sensor.heyra_kitchen_distress_keyword
+        hours_to_show: 24
+      # --- end Kitchen block ---

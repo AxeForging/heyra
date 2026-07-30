@@ -1,0 +1,106 @@
+# Fallback/reference only. Phase 2's server/listener/mqtt_out.py already
+# publishes MQTT Discovery for all of this -- HA creates these entities
+# automatically once its MQTT integration is connected to Heyra's broker.
+# This file exists for the case discovery is disabled, or you just want to
+# see explicitly what discovery creates. NOT included by anything; not a
+# live config file.
+#
+# Mirrors mqtt_out.py's publish_discovery()/publish_status_sensor_discovery()
+# exactly (same state_topic, value_template, off_delay, availability_topic).
+# One room (kitchen) shown -- copy the block per room for more units.
+
+mqtt:
+  binary_sensor:
+    - name: "Kitchen Baby Cry"
+      unique_id: heyra_kitchen_baby_cry
+      state_topic: "acoustic/kitchen/event"
+      value_template: "{{ 'ON' if value_json.event == 'baby_cry' else this.state }}"
+      payload_on: "ON"
+      payload_off: "OFF"
+      off_delay: 60
+      availability_topic: "acoustic/kitchen/status"
+      payload_available: "online"
+      payload_not_available: "offline"
+      device: {identifiers: ["heyra_kitchen"], name: "Heyra Kitchen", manufacturer: "Heyra"}
+
+    - name: "Kitchen Smoke Alarm"
+      unique_id: heyra_kitchen_smoke_alarm
+      state_topic: "acoustic/kitchen/event"
+      value_template: "{{ 'ON' if value_json.event == 'smoke_alarm' else this.state }}"
+      payload_on: "ON"
+      payload_off: "OFF"
+      off_delay: 120
+      availability_topic: "acoustic/kitchen/status"
+      payload_available: "online"
+      payload_not_available: "offline"
+      device: {identifiers: ["heyra_kitchen"], name: "Heyra Kitchen", manufacturer: "Heyra"}
+
+    - name: "Kitchen Glass Break"
+      unique_id: heyra_kitchen_glass_break
+      state_topic: "acoustic/kitchen/event"
+      value_template: "{{ 'ON' if value_json.event == 'glass_break' else this.state }}"
+      payload_on: "ON"
+      payload_off: "OFF"
+      off_delay: 30
+      availability_topic: "acoustic/kitchen/status"
+      payload_available: "online"
+      payload_not_available: "offline"
+      device: {identifiers: ["heyra_kitchen"], name: "Heyra Kitchen", manufacturer: "Heyra"}
+
+    - name: "Kitchen Dog Bark"
+      unique_id: heyra_kitchen_dog_bark
+      state_topic: "acoustic/kitchen/event"
+      value_template: "{{ 'ON' if value_json.event == 'dog_bark' else this.state }}"
+      payload_on: "ON"
+      payload_off: "OFF"
+      off_delay: 30
+      availability_topic: "acoustic/kitchen/status"
+      payload_available: "online"
+      payload_not_available: "offline"
+      device: {identifiers: ["heyra_kitchen"], name: "Heyra Kitchen", manufacturer: "Heyra"}
+
+    - name: "Kitchen Doorbell"
+      unique_id: heyra_kitchen_doorbell
+      state_topic: "acoustic/kitchen/event"
+      value_template: "{{ 'ON' if value_json.event == 'doorbell' else this.state }}"
+      payload_on: "ON"
+      payload_off: "OFF"
+      off_delay: 15
+      availability_topic: "acoustic/kitchen/status"
+      payload_available: "online"
+      payload_not_available: "offline"
+      device: {identifiers: ["heyra_kitchen"], name: "Heyra Kitchen", manufacturer: "Heyra"}
+
+    - name: "Kitchen Shout"
+      unique_id: heyra_kitchen_shout
+      state_topic: "acoustic/kitchen/event"
+      value_template: "{{ 'ON' if value_json.event == 'shout' else this.state }}"
+      payload_on: "ON"
+      payload_off: "OFF"
+      off_delay: 30
+      availability_topic: "acoustic/kitchen/status"
+      payload_available: "online"
+      payload_not_available: "offline"
+      device: {identifiers: ["heyra_kitchen"], name: "Heyra Kitchen", manufacturer: "Heyra"}
+
+    - name: "Kitchen Distress Keyword"
+      unique_id: heyra_kitchen_distress_keyword
+      state_topic: "acoustic/kitchen/event"
+      value_template: "{{ 'ON' if value_json.event == 'distress_keyword' else this.state }}"
+      payload_on: "ON"
+      payload_off: "OFF"
+      off_delay: 60
+      availability_topic: "acoustic/kitchen/status"
+      payload_available: "online"
+      payload_not_available: "offline"
+      device: {identifiers: ["heyra_kitchen"], name: "Heyra Kitchen", manufacturer: "Heyra"}
+
+  sensor:
+    - name: "Kitchen Status"
+      unique_id: heyra_kitchen_status
+      state_topic: "acoustic/kitchen/status"
+      device: {identifiers: ["heyra_kitchen"], name: "Heyra Kitchen", manufacturer: "Heyra"}
+
+# Note: "thump" is intentionally absent -- it's diagnostics_only in Phase 2's
+# config.yaml and only ever reaches acoustic/diag/kitchen/thump, never the
+# alert topic, so it never gets a discovery entity either.

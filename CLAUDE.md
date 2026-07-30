@@ -36,7 +36,16 @@
   - `keyword_spotting` uses openWakeWord's stock `hey_jarvis` model as a placeholder —
     `distress_keyword` is NOT a trained "help help" model yet, by design (see Context in
     the Phase 2 plan). Swapping in a real one is a `config.yaml` change, no rebuild.
-- Phases 3-4 (HA integration, calibration) — not started.
+- **Phase 3 (Home Assistant integration)** — draft generated, **not live-verified**. A real
+  HA instance exists (`hass-mcp` MCP config has a URL+token) but is on a different subnet
+  (`192.168.31.0/24`) unreachable from this dev machine (`192.168.1.0/24`); no Telegram bot
+  is connected anywhere on this machine either (gjallarhorn's `.env` has empty token/chat_id).
+  So `homeassistant/` is config-file generation for manual import, not something proven
+  end-to-end here. See `homeassistant/README.md` for the required setup checklist and manual
+  test steps before relying on it. All entity/service names cross-checked against what
+  `firmware/common.yaml` and `server/listener/mqtt_out.py` actually expose; all 3 YAML files
+  parse cleanly, but nothing has run against a live HA instance.
+- Phase 4 (calibration) — not started.
 
 ## Frozen contract: UDP audio packet format
 
