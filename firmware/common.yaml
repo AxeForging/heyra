@@ -55,9 +55,9 @@ web_server:
 external_components:
   - source:
       type: local
-      # Resolved relative to the top-level invoked YAML (boards/<board>.yaml), not this
-      # file -- hence the ../ even though this file lives next to components/.
-      path: ../components
+      # Resolved relative to the top-level invoked YAML (firmware/<board>.yaml, next to
+      # this file and components/ -- see boards/README.md), not this file itself.
+      path: components
     components: [udp_audio_streamer]
 
 udp_audio_streamer:

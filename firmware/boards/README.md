@@ -1,15 +1,17 @@
 # Board profiles
 
 One file per supported board. One shared image serves every physical unit of
-a given board (see `common.yaml`'s runtime `unit_id`/DHCP/mDNS setup) --
-compiled directly against `../common.yaml` as an ESPHome `packages:` entry,
-no per-unit wrapper file needed:
+a given board (see `common.yaml`'s runtime `unit_id`/DHCP/mDNS setup) -- no
+per-unit wrapper file needed. Each board gets one canonical top-level build
+target next to `common.yaml` (e.g. `firmware/atom-echo.yaml`):
 
 ```yaml
 packages:
-  board: !include ../boards/<board>.yaml
-  base: !include ../common.yaml
+  board: !include boards/<board>.yaml
+  base: !include common.yaml
 ```
+
+Compile with `esphome compile firmware/<board>.yaml`.
 
 ## Hardware contract
 

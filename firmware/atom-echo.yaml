@@ -1,0 +1,7 @@
+# Canonical build target for the ATOM Echo board -- one shared image serves every
+# physical unit (see common.yaml's runtime unit_id/DHCP/mDNS setup, Stage N). Compile
+# directly: esphome compile firmware/atom-echo.yaml. Also what
+# .github/workflows/pages.yml compiles to publish the WebSerial-flashable binary.
+packages:
+  board: !include boards/atom-echo.yaml
+  base: !include common.yaml

@@ -1,5 +1,14 @@
 name: Deploy Pages
 
+# Builds the WebSerial-flashable firmware binary (Stage O -- see CLAUDE.md) and writes it
+# into web/firmware/atom-echo/ before uploading, so the flashing page (web/flash.html)
+# always ships whatever's on master. Not committed to git -- built fresh each deploy, same
+# "prebuilt artifact over building on the end user's device" reasoning as the ghcr.io addon
+# image, just via GitHub Pages instead of a container registry. GitHub Pages deployments
+# fully replace prior content each run, so there's no meaningful "keep old firmware
+# versions" here (unlike the addon's tagged ghcr.io images) -- manifest.json's version
+# field is just the commit it was built from, for support/debugging, not a pinned release.
+
 on:
   push:
     branches:
@@ -24,6 +33,40 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install esphome
+        run: pip install esphome==2026.7.3
+
+      - name: Compile firmware
+        working-directory: firmware
+        run: esphome compile atom-echo.yaml
+
+      - name: Publish firmware + esp-web-tools manifest into web/
+        run: |
+          set -euo pipefail
+          out=web/firmware/atom-echo
+          mkdir -p "$out"
+          cp firmware/.esphome/build/heyra-atom-echo/build/firmware.factory.bin "$out/firmware.bin"
+          version=$(git rev-parse --short HEAD)
+          cat > "$out/manifest.json" <<JSON
+          {
+            "name": "Heyra -- ATOM Echo",
+            "version": "$version",
+            "builds": [
+              {
+                "chipFamily": "ESP32",
+                "parts": [
+                  { "path": "firmware.bin", "offset": 0 }
+                ]
+              }
+            ]
+          }
+          JSON
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
