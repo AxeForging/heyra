@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flash a unit — Heyra</title>
+<meta name="description" content="Flash Heyra firmware onto a new ATOM Echo unit directly from your browser, no dev machine needed.">
+<link rel="icon" href="./favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="./axeforge.css">
+<script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+<style>
+  /* Same shell as index.html -- same accent override, same kit components, kept in sync
+     deliberately rather than sharing a separate stylesheet for two pages this small. */
+  :root { --af-accent: #ff3b3b; --af-accent-hover: #e62e2e; --af-accent-contrast: #ffffff; }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: inherit; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 1.5rem; }
+
+  .topbar {
+    padding: 0;
+    min-height: 68px;
+    border-bottom: 1px solid var(--af-line);
+    background: color-mix(in srgb, var(--af-bg) 88%, transparent);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 40;
+  }
+  .topbar .wrap { max-width: 1120px; display: flex; align-items: center; justify-content: space-between; min-height: 68px; }
+  .topbar-brand { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; font-weight: 700; }
+  .topbar-brand img { height: 24px; width: 24px; }
+  .topbar-brand .sep { color: var(--af-text-muted); font-weight: 400; margin: 0 0.15rem; }
+  .navlink { color: var(--af-text-muted); text-decoration: none; font-size: 0.9rem; }
+  .navlink:hover { color: var(--af-text); }
+
+  main { padding: 4rem 0; }
+  .kicker { font-family: var(--af-font-mono); font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--af-accent); margin-bottom: 1rem; }
+  h1 { font-size: clamp(1.9rem, 1.5rem + 1.6vw, 2.6rem); line-height: 1.1; margin: 0 0 1.1rem; letter-spacing: -0.01em; }
+  .lede { color: var(--af-text-muted); font-size: 1.05rem; line-height: 1.65; max-width: 58ch; margin: 0 0 2.25rem; }
+
+  .flash-card { padding: 1.75rem; margin-bottom: 1.5rem; }
+  .flash-card h2 { margin: 0 0 0.5rem; font-size: 1.1rem; }
+  .flash-card p { margin: 0; color: var(--af-text-muted); line-height: 1.6; }
+
+  esp-web-install-button { display: block; margin-top: 1.25rem; }
+  .axe-button.flash-trigger { font-size: 1.05rem; padding: 0.9rem 1.6rem; }
+  .browser-note { margin-top: 1rem; padding: 0.8rem 1rem; border-radius: var(--af-radius); background: color-mix(in srgb, var(--af-accent) 8%, transparent); border: 1px solid color-mix(in srgb, var(--af-accent) 25%, transparent); font-size: 0.85rem; color: var(--af-text-muted); }
+
+  .steps { counter-reset: step; display: flex; flex-direction: column; gap: 1.1rem; margin: 0; }
+  .step { display: flex; gap: 1rem; align-items: flex-start; }
+  .step .n {
+    counter-increment: step; flex: none; width: 1.9rem; height: 1.9rem; border-radius: 50%;
+    border: 1px solid var(--af-line); display: flex; align-items: center; justify-content: center;
+    font-family: var(--af-font-mono); font-size: 0.85rem; color: var(--af-accent);
+  }
+  .step .n::before { content: counter(step); }
+  .step h3 { margin: 0 0 0.3rem; font-size: 0.98rem; }
+  .step p { margin: 0; color: var(--af-text-muted); font-size: 0.92rem; line-height: 1.6; }
+  .step code { font-family: var(--af-font-mono); background: var(--af-surface); padding: 0.15em 0.45em; border-radius: 4px; font-size: 0.88em; }
+
+  footer { padding: 3rem 0 4rem; text-align: center; color: var(--af-text-muted); font-size: 0.9rem; }
+  footer a { text-decoration: underline; text-decoration-color: var(--af-line); text-underline-offset: 3px; }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap">
+      <a class="topbar-brand" href="./index.html">
+        <img src="./logo.svg" alt="">
+        <span>AxeForging<span class="sep">/</span>Heyra</span>
+      </a>
+      <a class="navlink" href="./index.html">&larr; Back to Heyra</a>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="kicker">Flash a unit</div>
+    <h1>Turn an ATOM Echo into a Heyra unit.</h1>
+    <p class="lede">
+      Plug it into this computer over USB, hit flash below. Everything happens in your
+      browser — no dev machine, no compiling, nothing installed on the Heyra Add-on.
+    </p>
+
+    <div class="glass-card flash-card">
+      <h2>1. Flash</h2>
+      <p>One shared firmware image works for every unit — Wi-Fi and the unit's identity
+         are set up after flashing, not baked in.</p>
+
+      <esp-web-install-button manifest="./firmware/atom-echo/manifest.json">
+        <button slot="activate" class="axe-button flash-trigger">Connect device &amp; flash</button>
+        <span slot="unsupported" class="browser-note">
+          Your browser doesn't support WebSerial. Flashing needs a desktop build of
+          <strong>Chrome</strong> or <strong>Edge</strong> — it isn't available on
+          Firefox, Safari, or mobile browsers.
+        </span>
+        <span slot="not-allowed" class="browser-note">
+          This page needs to be served over HTTPS for WebSerial to work.
+        </span>
+      </esp-web-install-button>
+    </div>
+
+    <div class="glass-card flash-card">
+      <h2>2. What happens next</h2>
+      <p style="margin-bottom: 1.25rem;">
+        After flashing, the unit reboots into setup mode — no network configured yet.
+      </p>
+      <div class="steps">
+        <div class="step">
+          <span class="n"></span>
+          <div>
+            <h3>Connect to the unit's setup network</h3>
+            <p>It broadcasts its own open Wi-Fi network, named something like
+               <code>heyra-atom-echo-a1b2c3</code> (the suffix is unique per device).
+               Connect to it from your phone or laptop.</p>
+          </div>
+        </div>
+        <div class="step">
+          <span class="n"></span>
+          <div>
+            <h3>Give it your real Wi-Fi</h3>
+            <p>A setup page should open automatically (or visit
+               <code>http://192.168.4.1</code>). Enter your home network's name and
+               password. The unit reboots and joins it.</p>
+          </div>
+        </div>
+        <div class="step">
+          <span class="n"></span>
+          <div>
+            <h3>Set its Unit ID</h3>
+            <p>Once it's on your real network, visit <code>http://&lt;device&gt;.local</code>
+               (the same name as the setup network) and set the <strong>Unit ID</strong>
+               number. This must match the <code>unit_id</code> you give this unit in the
+               Heyra Add-on's <strong>Configuration</strong> tab — that's what maps it to
+               a room.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass-card flash-card">
+      <h2>Re-flashing or a different board?</h2>
+      <p>Run this same page again — flashing is safe to repeat. Only the ATOM Echo is
+         supported today; see
+         <a href="https://github.com/AxeForging/heyra/blob/master/firmware/boards/README.md">firmware/boards</a>
+         in the repo for the hardware contract a new board would need to satisfy.</p>
+    </div>
+  </main>
+
+  <footer>
+    <p>Built by <a href="https://github.com/murilopmachado">Murilo Machado</a> and the
+       <a href="https://github.com/AxeForging">AxeForging</a> team.</p>
+    <p>Check out our other tools at <a href="https://tools.axeforge.io">tools.axeforge.io</a>.</p>
+  </footer>
+</body>
+</html>
