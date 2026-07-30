@@ -1,0 +1,31 @@
+[project]
+name = "heyra-listener"
+version = "0.1.0"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "numpy==1.26.4",  # newer numpy 2.x breaks tflite-runtime's compiled ABI (predates numpy 2.0) -- verified
+    "scipy==1.16.2",
+    "scikit-learn==1.9.0",
+    "tflite-runtime==2.14.0",
+    "onnxruntime==1.28.0",
+    "openwakeword==0.6.0",
+    "aiomqtt==2.5.1",
+    "PyYAML==6.0.3",
+    "tqdm==4.70.0",
+    "requests==2.34.2",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0", "pytest-asyncio>=0.23"]
+
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["listener*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["listener/tests"]

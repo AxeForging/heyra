@@ -17,7 +17,26 @@
     per-phase tolerances (t3_detector.h) were retuned from their initial guesses using
     real magnitude/timing readings off the device — both are explicitly flagged in-code as
     provisional pending Phase 4 calibration against an actual smoke-alarm recording.
-- Phases 2-4 (server ML, HA integration, calibration) — not started.
+- **Phase 2 (server: YAMNet + openWakeWord + MQTT)** — done, verified against the live
+  atom-echo-01 unit. `cd server && docker compose up --build -d` runs it (own dedicated
+  mosquitto, not shared with gjallarhorn).
+  - 31/31 unit tests pass (`server/listener/tests/`, no hardware/Docker needed).
+  - `tflite-runtime==2.14.0`'s compiled extension is ABI-incompatible with numpy 2.x
+    (predates numpy 2.0) — pinned `numpy==1.26.4`, not the originally-planned 2.2.6.
+  - Verified live: UDP ingest (~32 pkt/s, zero gaps, `/healthz` correct), real YAMNet
+    classification firing a correct `baby_cry` MQTT event (score 0.5) on a real baby-cry
+    recording, container restart resilience (auto-resumes online, no manual steps).
+  - A doorbell chime SFX correctly scored high on YAMNet's "Chime"/"Bell" classes but not
+    the narrower "Doorbell"/"Ding-dong" classes configured for that event — pipeline is
+    correct, class-mapping/threshold tuning against real fixtures is Phase 4 work as
+    already anticipated.
+  - Not run this session (flagged as follow-ups, not blockers): the 1h TV soak test, and
+    physically power-cycling a unit to verify the offline-after-5s status transition
+    (covered by unit tests via synthetic timestamps, not live hardware).
+  - `keyword_spotting` uses openWakeWord's stock `hey_jarvis` model as a placeholder —
+    `distress_keyword` is NOT a trained "help help" model yet, by design (see Context in
+    the Phase 2 plan). Swapping in a real one is a `config.yaml` change, no rebuild.
+- Phases 3-4 (HA integration, calibration) — not started.
 
 ## Frozen contract: UDP audio packet format
 

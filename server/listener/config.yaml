@@ -1,0 +1,91 @@
+ingest:
+  bind_host: 0.0.0.0
+  port: 6969
+  ring_seconds: 2.0
+  offline_timeout_s: 5.0
+
+healthz:
+  port: 8080
+
+mqtt:
+  host: mosquitto
+  port: 1883
+  discovery_prefix: homeassistant
+  client_id: heyra-listener
+
+debug:
+  enabled: false
+  output_dir: /app/debug
+  rotate_seconds: 30
+
+units:
+  - unit_id: 1
+    room: kitchen
+
+classify:
+  model_path: /app/models/yamnet.tflite
+  class_map_path: /app/models/yamnet_class_map.csv
+  events:
+    baby_cry:
+      class_indices: [20, 19]   # "Baby cry, infant cry", "Crying, sobbing"
+      threshold: 0.45
+      hysteresis: {hits: 3, window_s: 10}
+      cooldown_s: 60
+      diagnostics_only: false
+      ha: {off_delay_s: 60}
+    smoke_alarm:
+      class_indices: [393, 394]   # "Smoke detector, smoke alarm", "Fire alarm"
+      threshold: 0.40
+      hysteresis: {hits: 2, window_s: 6}
+      cooldown_s: 60
+      diagnostics_only: false
+      ha: {off_delay_s: 120}
+    glass_break:
+      class_indices: [435, 437]   # "Glass", "Shatter"
+      threshold: 0.50
+      hysteresis: {hits: 2, window_s: 4}
+      cooldown_s: 60
+      diagnostics_only: false
+      ha: {off_delay_s: 30}
+    dog_bark:
+      class_indices: [69, 70]   # "Dog", "Bark"
+      threshold: 0.55
+      hysteresis: {hits: 3, window_s: 10}
+      cooldown_s: 60
+      diagnostics_only: false
+      ha: {off_delay_s: 30}
+    doorbell:
+      class_indices: [349, 350]   # "Doorbell", "Ding-dong"
+      threshold: 0.45
+      hysteresis: {hits: 1, window_s: 1}
+      cooldown_s: 60
+      diagnostics_only: false
+      ha: {off_delay_s: 15}
+    shout:
+      class_indices: [6, 9, 11]   # "Shout", "Yell", "Screaming"
+      threshold: 0.55
+      hysteresis: {hits: 3, window_s: 8}
+      cooldown_s: 60
+      diagnostics_only: false
+      ha: {off_delay_s: 30}
+    thump:
+      class_indices: [454, 460]   # "Thump, thud", "Bang"
+      threshold: 0.60
+      hysteresis: {hits: 2, window_s: 5}
+      cooldown_s: 60
+      diagnostics_only: true    # NEVER reaches acoustic/<room>/event
+
+# Stock placeholder wake word -- proves the pipeline works end-to-end, is NOT a
+# trained "help help" model. See CLAUDE.md / docs/build-plan.md Phase 2 note.
+keyword_spotting:
+  enabled: true
+  model_path: /app/models/openwakeword/hey_jarvis_v0.1.tflite
+  inference_framework: tflite
+  threshold: 0.90
+  hysteresis: {hits: 2, window_s: 10}
+  cooldown_s: 60
+  event_name: distress_keyword
+  diagnostics_only: false
+  ha: {off_delay_s: 60}
+
+overrides: {}

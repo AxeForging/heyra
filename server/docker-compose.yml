@@ -1,0 +1,35 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    ports:
+      - "1883:1883"
+    restart: unless-stopped
+
+  listener:
+    build: .
+    depends_on:
+      - mosquitto
+    ports:
+      - "6969:6969/udp"
+      - "8080:8080"
+    volumes:
+      - ./listener/config.yaml:/app/config.yaml:ro
+      - ./models:/app/models:ro
+      - listener-debug:/app/debug
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+volumes:
+  mosquitto-data: {}
+  mosquitto-log: {}
+  listener-debug: {}
