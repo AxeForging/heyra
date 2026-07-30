@@ -1,3 +1,9 @@
+# Historical: how the real, first-deployed atom-echo-01 unit was built and flashed
+# (verified live, see CLAUDE.md) before the shared-generic-image rework. common.yaml no
+# longer templates on device_name/friendly_name/room/unit_id/static_ip -- esphome.name is
+# now fixed with name_add_mac_suffix, and unit_id/server discovery are runtime-configured
+# (see common.yaml). Recompiling this file today produces the same generic image as
+# boards/atom-echo.yaml would directly; kept as a record, not a live build target.
 substitutions:
   room: kitchen
   device_name: atom-echo-01

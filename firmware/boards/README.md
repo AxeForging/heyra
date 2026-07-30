@@ -1,7 +1,9 @@
 # Board profiles
 
-One file per supported board, included by each `firmware/units/*.yaml` as an
-ESPHome `packages:` entry alongside `../common.yaml`:
+One file per supported board. One shared image serves every physical unit of
+a given board (see `common.yaml`'s runtime `unit_id`/DHCP/mDNS setup) --
+compiled directly against `../common.yaml` as an ESPHome `packages:` entry,
+no per-unit wrapper file needed:
 
 ```yaml
 packages:

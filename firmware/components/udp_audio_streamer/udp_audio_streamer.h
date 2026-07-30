@@ -24,8 +24,12 @@ class UDPAudioStreamer : public Component {
   void dump_config() override;
   float get_setup_priority() const override { return setup_priority::AFTER_WIFI; }
 
+  // Called at boot from on_boot: (restored value) and live from the Unit ID number
+  // entity's set_action -- no longer a compile-time constant, see __init__.py.
   void set_unit_id(uint8_t id) { unit_id_ = id; }
-  void set_server_ip(const std::string &ip) { server_ip_ = ip; }
+  // Literal IP or an mDNS ".local" hostname -- resolved to a literal IP once in setup(),
+  // see resolve_host_() in the .cpp.
+  void set_server_host(const std::string &host) { server_host_ = host; }
   void set_server_port(uint16_t port) { server_port_ = port; }
   void set_microphone(microphone::Microphone *mic) { mic_ = mic; }
   void set_speaker(speaker::Speaker *spk) { speaker_ = spk; }
@@ -49,10 +53,14 @@ class UDPAudioStreamer : public Component {
   microphone::Microphone *mic_{nullptr};
   speaker::Speaker *speaker_{nullptr};
   uint8_t unit_id_{0};
-  std::string server_ip_;
+  std::string server_host_;
   uint16_t server_port_{0};
   std::unique_ptr<socket::Socket> socket_;
   struct sockaddr dest_addr_ {};
+  // False until server_host_ resolves -- send_packet_() no-ops until then. A boot-time
+  // DNS/mDNS race against the network coming up is expected, not a hard failure; setup()
+  // retries on an interval until this flips true.
+  bool server_resolved_{false};
 
   std::atomic<bool> streaming_enabled_{true};
   std::atomic<bool> smoke_alarm_detected_{false};

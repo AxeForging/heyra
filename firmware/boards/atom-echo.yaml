@@ -51,11 +51,13 @@ binary_sensor:
       - min_length: 30ms
         max_length: 400ms
         then:
+          # unit_id is runtime-configured now (see common.yaml's number: entity), not a
+          # compile-time substitution -- room is no longer known to firmware at all
+          # (server-side-only, via the Add-on's own options.units config).
           - homeassistant.event:
               event: esphome.button_ack
               data:
-                unit_id: "${unit_id}"
-                room: "${room}"
+                unit_id: !lambda 'return (int) id(unit_id_number).state;'
     on_multi_click:
       - timing:
           - ON for at least 3s

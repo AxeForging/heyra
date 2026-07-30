@@ -1,37 +1,42 @@
 substitutions:
-  room: unset
-  device_name: unset
-  friendly_name: unset
-  unit_id: "0"
-  static_ip: 192.168.1.100
-  gateway_ip: 192.168.1.1
-  subnet_mask: 255.255.255.0
-  server_ip: 192.168.1.228
+  # One shared image for every physical unit -- no per-unit compile. Identity comes from
+  # esphome.name_add_mac_suffix below; the one value that must actually be set correctly
+  # per unit (unit_id) is a runtime-configurable number: entity further down, not a
+  # substitution.
+  server_host: homeassistant.local
   server_port: "6969"
 
 esphome:
-  name: ${device_name}
-  friendly_name: ${friendly_name}
+  name: heyra-atom-echo
+  # Gives each physical unit a distinct hostname/AP name (heyra-atom-echo-a1b2c3) from one
+  # identical compiled binary -- no per-unit compile needed just for identity.
+  name_add_mac_suffix: true
+  on_boot:
+    then:
+      - lambda: 'id(streamer).set_unit_id((uint8_t) id(unit_id_number).state);'
 
 wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  manual_ip:
-    static_ip: ${static_ip}
-    gateway: ${gateway_ip}
-    subnet: ${subnet_mask}
+  # No target network baked in -- nothing to bake for a shared image. Boots straight into
+  # the fallback AP; the captive portal below handles onboarding. Real per-household WiFi
+  # credentials never touch this repo or a compiled binary anymore.
   ap:
-    ssid: "${device_name}-fallback"
-    password: !secret wifi_password
 
 captive_portal:
+
+# Enables .local hostname resolution (needed for server_host: homeassistant.local below) --
+# relies on ESP-IDF's DNS resolver routing .local queries through mDNS once this component
+# is linked in. Verify against real hardware; this is inferred from ESP-IDF's documented
+# behavior, not tested on-device yet.
+mdns:
 
 logger:
   level: INFO
 
+# No encryption key / OTA password baked in -- both are compile-time-only in stock
+# ESPHome, so a shared image genuinely can't carry a unique secret per unit. This is a
+# real security-posture change (LAN-only trust boundary, same as ESPHome's own default
+# when a user doesn't opt into encryption), not a silent downgrade -- see CLAUDE.md.
 api:
-  encryption:
-    key: !secret api_encryption_key
   actions:
     - action: play_alert
       variables:
@@ -41,23 +46,44 @@ api:
 
 ota:
   - platform: esphome
-    password: !secret ota_password
+
+# Built-in device dashboard, reachable at http://<device>.local once on real WiFi -- lets
+# a user set the Unit ID number entity below without needing to adopt into Home Assistant
+# first.
+web_server:
 
 external_components:
   - source:
       type: local
-      # Resolved relative to the top-level invoked YAML (units/atom-echo-NN.yaml), not
-      # this file -- hence the ../ even though this file lives next to components/.
+      # Resolved relative to the top-level invoked YAML (boards/<board>.yaml), not this
+      # file -- hence the ../ even though this file lives next to components/.
       path: ../components
     components: [udp_audio_streamer]
 
 udp_audio_streamer:
   id: streamer
-  unit_id: ${unit_id}
   microphone_id: mic
   speaker_id: spk
-  server_ip: ${server_ip}
+  server_host: ${server_host}
   server_port: ${server_port}
+
+# The one value that must actually be set correctly per physical unit (must match this
+# unit's entry in the Heyra Add-on's own options.units config). restore_value persists it
+# across reboots via ESPHome's own NVS-backed preference storage -- no custom C++ storage
+# needed. restore_value only republishes the stored *display* value on boot (it does not
+# fire set_action) -- on_boot below pushes that restored value into the component; live
+# changes (from Home Assistant or the web_server page) go through set_action.
+number:
+  - platform: template
+    name: "Unit ID"
+    id: unit_id_number
+    min_value: 1
+    max_value: 255
+    step: 1
+    restore_value: true
+    initial_value: 1
+    set_action:
+      - lambda: 'id(streamer).set_unit_id((uint8_t) x);'
 
 switch:
   - platform: template

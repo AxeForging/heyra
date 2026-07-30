@@ -1,6 +1,8 @@
 #include "udp_audio_streamer.h"
 
 #include <cstring>
+#include <netdb.h>
+#include <arpa/inet.h>
 
 #include "esphome/core/hal.h"
 #include "esphome/core/log.h"
@@ -11,6 +13,26 @@ namespace esphome::udp_audio_streamer {
 
 static const char *const TAG = "udp_audio_streamer";
 
+namespace {
+// server_host_ can be a literal IP or an mDNS ".local" hostname -- set_sockaddr() below
+// only accepts a literal IP (inet_pton internally), so this resolves once, up front.
+bool resolve_host_(const std::string &host, std::string *out_ip) {
+  struct addrinfo hints {};
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_DGRAM;
+  struct addrinfo *result = nullptr;
+  if (getaddrinfo(host.c_str(), nullptr, &hints, &result) != 0 || result == nullptr) {
+    return false;
+  }
+  char buf[INET_ADDRSTRLEN];
+  auto *addr_in = reinterpret_cast<struct sockaddr_in *>(result->ai_addr);
+  inet_ntop(AF_INET, &addr_in->sin_addr, buf, sizeof(buf));
+  *out_ip = buf;
+  freeaddrinfo(result);
+  return true;
+}
+}  // namespace
+
 void UDPAudioStreamer::setup() {
   socket_ = socket::socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
   if (socket_ == nullptr) {
@@ -19,7 +41,26 @@ void UDPAudioStreamer::setup() {
     return;
   }
   socket_->setblocking(false);
-  socket::set_sockaddr(&dest_addr_, sizeof(dest_addr_), server_ip_.c_str(), server_port_);
+
+  std::string resolved_ip;
+  if (resolve_host_(server_host_, &resolved_ip)) {
+    socket::set_sockaddr(&dest_addr_, sizeof(dest_addr_), resolved_ip.c_str(), server_port_);
+    server_resolved_ = true;
+    ESP_LOGI(TAG, "Resolved server host '%s' -> %s", server_host_.c_str(), resolved_ip.c_str());
+  } else {
+    // A DNS/mDNS lookup this early can race the network coming up -- retry on an interval
+    // rather than failing setup() outright.
+    ESP_LOGW(TAG, "Could not resolve server host '%s' yet, retrying", server_host_.c_str());
+    this->set_interval("resolve_server_host", 2000, [this]() {
+      std::string ip;
+      if (resolve_host_(server_host_, &ip)) {
+        socket::set_sockaddr(&dest_addr_, sizeof(dest_addr_), ip.c_str(), server_port_);
+        server_resolved_ = true;
+        ESP_LOGI(TAG, "Resolved server host '%s' -> %s", server_host_.c_str(), ip.c_str());
+        this->cancel_interval("resolve_server_host");
+      }
+    });
+  }
 
   mic_->add_data_callback([this](const std::vector<uint8_t> &data) { this->on_mic_data_(data); });
   // Mic runs continuously -- Goertzel needs it regardless of the streaming switch's state.
@@ -32,7 +73,7 @@ void UDPAudioStreamer::dump_config() {
                 "UDP Audio Streamer:\n"
                 "  Unit ID: %u\n"
                 "  Server: %s:%u",
-                unit_id_, server_ip_.c_str(), server_port_);
+                unit_id_, server_host_.c_str(), server_port_);
 }
 
 void UDPAudioStreamer::loop() { this->tick_alert_(); }
@@ -69,6 +110,9 @@ void UDPAudioStreamer::on_mic_data_(const std::vector<uint8_t> &data) {
 }
 
 void UDPAudioStreamer::send_packet_(size_t payload_len, uint8_t flags) {
+  if (!server_resolved_) {
+    return;  // nothing to send to yet -- setup()'s resolve retry is still in flight
+  }
   packet_.header.magic = core::MAGIC;
   packet_.header.unit_id = unit_id_;
   packet_.header.flags = flags;
