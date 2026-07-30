@@ -146,6 +146,65 @@
       Mosquitto Add-on, auto-discovered via `mqtt:want`) is required.
     - `logo.png` redesigned to actually say "Heyra" (was the generic AxeForge company
       wordmark, same file used everywhere else) — owner flagged this directly.
+- **Ingress panel real-device fixes + flashing moved to WebSerial** — the owner tested the
+  live Ingress panel after the 502 fix and found two more real bugs, then proposed (and
+  this was built) moving flashing off the Add-on entirely:
+  - **`/flash` was a real 404** — `STATUS_HTML`'s `href="/flash"` and the flash wizard's
+    `fetch('/api/flash', ...)` were absolute paths, which drop HA Ingress's path prefix
+    (`/api/hassio_ingress/<token>/...`) and resolve from the domain root instead. Fixed by
+    making both relative (`0.3.1`) — since superseded by the flashing removal below.
+  - **The flash form threw a real, silent 500** — `python-multipart` was never a declared
+    dependency; Starlette raised in `await request.form()` before any board validation ran.
+    Fixed in `0.3.2`, alongside surfacing configured units (room, online/offline, last
+    packet) in the Ingress panel from `listener.healthz`'s own snapshot over loopback
+    (`fetch_unit_snapshot()` in `app/main.py`) instead of only linking to an unproxied
+    `:8080/healthz` URL — this is what "I cannot see the devices I already have" needed.
+  - **Flashing moved to a WebSerial page** (`web/flash.html`, `esp-web-tools`), decided
+    with the owner via `AskUserQuestion`: static IP → DHCP (dropped `manual_ip` from
+    `common.yaml` entirely), and the Add-on flasher replaced outright (no redundant
+    fallback). This required a real firmware redesign, not just moving a button — WebSerial
+    needs one shared prebuilt binary, so nothing per-unit can be baked in at compile time
+    anymore:
+    - `esphome.name_add_mac_suffix: true` gives every physical unit a distinct hostname/AP
+      name from one identical image — no more per-unit `device_name`/`friendly_name`/`room`
+      substitutions (those were cosmetic HA-adoption naming only; the acoustic pipeline only
+      ever cared about `unit_id`, which lives in the Add-on's own `options.units` config).
+    - `unit_id` — the one value that must actually be set correctly per unit — is now a
+      `restore_value` ESPHome `number:` entity (NVS-backed persistence, no custom C++
+      storage) instead of a compile-time constant. Traced ESPHome's own source to confirm
+      `restore_value` only republishes the *display* value on boot and does **not** fire
+      `set_action` — `esphome.on_boot` pushes the restored value into
+      `udp_audio_streamer`'s existing `set_unit_id()` setter; live changes (from HA or the
+      device's own `web_server:` page) go through `set_action` instead.
+    - Server discovery: `server_ip` → `server_host`, defaulting to `homeassistant.local`
+      (resolved once via `getaddrinfo` in `setup()`, retried on an interval if the network
+      isn't up yet) — `host_network: true` already puts the Add-on on the same IP HAOS's
+      own avahi advertises that name for, so no new discovery mechanism was needed.
+    - WiFi onboarding reuses `common.yaml`'s pre-existing `wifi.ap` fallback hotspot +
+      `captive_portal:` (now open/passwordless, since there's no target network to protect
+      it with on a generic image) — no new firmware component needed there either.
+    - `api:`/`ota:` compile-time encryption/password dropped — confirmed by reading
+      ESPHome's own source that both are compile-time-only with no runtime-generation
+      mechanism, so a shared image genuinely can't carry a unique secret per unit. **Real
+      security-posture change** (LAN-only trust boundary, same as ESPHome's own default
+      when encryption isn't opted into) — flagged explicitly, not a silent downgrade.
+    - `.github/workflows/pages.yml` now compiles `firmware/atom-echo.yaml` (the new
+      canonical per-board build target, replacing the per-unit `firmware/units/*.yaml`
+      pattern) and publishes `firmware.bin` + an `esp-web-tools` `manifest.json` into
+      `web/firmware/atom-echo/` before the existing Pages upload step — not committed to
+      git, built fresh each deploy. Verified live: real `curl` against the deployed
+      `manifest.json` (correct fields, not just schema-shaped), `firmware.bin` (real
+      ~1MB binary), and `flash.html` (200).
+    - Add-on's `Dockerfile` drops the whole `esphome` + its own Python 3.12 `uv` venv layer
+      and `uart: true` (no more USB passthrough) — verified via a real `docker build` +
+      side-by-side size comparison against the published `0.3.2` image: **1.21GB → 750MB,
+      ~38% smaller**, the concrete "make it lighter" the owner asked for.
+  - **Not yet verified against real hardware** (flagged plainly, not assumed): the fallback
+    AP actually appearing and being open, the captive portal actually accepting WiFi
+    credentials on a secrets-free image, `homeassistant.local` actually resolving via mDNS
+    from the firmware side, and the `unit_id` number entity actually surviving a reboot.
+    Structural verification only (`esphome compile` succeeds clean, no warnings; addon test
+    suite 48/48 passing) — real confirmation is the owner's, next time they flash a unit.
 - Phase 4 (calibration) — not started.
 
 ## Frozen contract: UDP audio packet format
@@ -168,5 +227,7 @@ Struct is `__attribute__((packed))`; total size 1036 bytes when payload is prese
 
 ## Unit count
 
-Not fixed. The owner has 4 physical units today; the firmware/config pattern (`common.yaml` +
-one `units/atom-echo-NN.yaml` per device) supports any number — add or remove unit files freely.
+Not fixed. The owner has 4 physical units today. One shared firmware image now serves
+every unit of a given board (see the WebSerial-flashing rework above) — adding a unit is
+flashing another one via `web/flash.html` and adding an entry to the Add-on's `options.units`
+config, no firmware-side per-unit file anymore.
