@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.1
+
+Fixes a real 404 on "Flash a unit": the Ingress panel's `href="/flash"` and the
+flash wizard's `fetch('/api/flash', ...)` were absolute paths, which drop HA
+Ingress's path prefix (`/api/hassio_ingress/<token>/...`) and resolve from the
+domain root instead. Now relative. Also restyled both Ingress pages (dark
+background, Heyra's real `#ff3b3b` accent, Inter/JetBrains Mono) -- they were
+still on plain light/system styling with a stale accent color left over from
+before the brand was finalized.
+
 ## 0.3.0
 
 Fixes a real 502 on Ingress: with `host_network: true` + `ingress_port: 0`,

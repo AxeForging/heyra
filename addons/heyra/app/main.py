@@ -131,31 +131,38 @@ async def api_flash(request):
 STATUS_HTML = """<!doctype html>
 <html><head><meta charset="utf-8"><title>Heyra</title>
 <style>
-  :root { --accent: #ff4e4e; }
-  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 3rem auto; padding: 0 1rem; }
-  h1 { border-left: 4px solid var(--accent); padding-left: 0.6rem; }
-  a.card { display: block; padding: 1rem; margin-top: 1rem; border: 1px solid #333; border-radius: 6px; text-decoration: none; color: inherit; }
+  :root { --bg: #05070a; --surface: #0a0f1a; --line: #1a2233; --text: #ffffff; --text-muted: #94a3b8; --accent: #ff3b3b; --accent-hover: #e62e2e; }
+  * { box-sizing: border-box; }
+  body { font-family: "Inter", ui-sans-serif, system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 640px; margin: 3rem auto; padding: 0 1rem; }
+  h1 { font-weight: 700; letter-spacing: -0.02em; }
+  p { color: var(--text-muted); }
+  a.card, div.card { display: block; padding: 1.1rem 1.25rem; margin-top: 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: 0.5rem; text-decoration: none; color: inherit; transition: border-color 0.15s ease; }
   a.card:hover { border-color: var(--accent); }
-  a.card strong { display: block; margin-bottom: 0.3rem; }
-  a.card span { color: #888; font-size: 0.9rem; }
+  a.card strong, div.card strong { display: block; margin-bottom: 0.3rem; }
+  a.card span, div.card span { color: var(--text-muted); font-size: 0.9rem; }
+  code { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace; background: var(--bg); padding: 0.1rem 0.3rem; border-radius: 0.25rem; }
 </style></head>
 <body>
 <h1>Heyra</h1>
 <p>Acoustic event detection + firmware flashing, by AxeForging.</p>
-<a class="card" href="/flash"><strong>Flash a unit</strong><span>Compile and flash Heyra firmware onto a new ATOM Echo over USB</span></a>
+<a class="card" href="flash"><strong>Flash a unit</strong><span>Compile and flash Heyra firmware onto a new ATOM Echo over USB</span></a>
 <div class="card"><strong>Live status</strong><span>Per-unit online/offline JSON at <code>&lt;this host&gt;:8080/healthz</code> (not proxied through Ingress -- open it directly on your network)</span></div>
 </body></html>"""
 
 FLASH_HTML = """<!doctype html>
 <html><head><meta charset="utf-8"><title>Heyra Flasher</title>
 <style>
-  :root {{ --accent: #ff4e4e; }}
-  body {{ font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }}
-  h1 {{ border-left: 4px solid var(--accent); padding-left: 0.6rem; }}
-  label {{ display: block; margin-top: 0.8rem; font-weight: 600; }}
-  input, select {{ width: 100%; padding: 0.4rem; box-sizing: border-box; }}
-  button {{ margin-top: 1.2rem; padding: 0.6rem 1.2rem; background: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer; }}
-  pre {{ background: #111; color: #eee; padding: 1rem; margin-top: 1rem; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }}
+  :root {{ --bg: #05070a; --surface: #0a0f1a; --line: #1a2233; --text: #ffffff; --text-muted: #94a3b8; --accent: #ff3b3b; --accent-hover: #e62e2e; }}
+  * {{ box-sizing: border-box; }}
+  body {{ font-family: "Inter", ui-sans-serif, system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 640px; margin: 2rem auto; padding: 0 1rem; }}
+  h1 {{ font-weight: 700; letter-spacing: -0.02em; }}
+  p {{ color: var(--text-muted); }}
+  label {{ display: block; margin-top: 0.8rem; font-weight: 600; font-size: 0.9rem; }}
+  input, select {{ width: 100%; padding: 0.5rem 0.6rem; margin-top: 0.3rem; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 0.4rem; }}
+  input:focus, select:focus {{ outline: none; border-color: var(--accent); }}
+  button {{ margin-top: 1.2rem; padding: 0.6rem 1.2rem; background: var(--accent); color: #ffffff; border: none; border-radius: 0.4rem; font-weight: 600; cursor: pointer; }}
+  button:hover {{ background: var(--accent-hover); }}
+  pre {{ font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace; background: var(--surface); border: 1px solid var(--line); color: var(--text); padding: 1rem; margin-top: 1rem; white-space: pre-wrap; max-height: 400px; overflow-y: auto; border-radius: 0.4rem; }}
 </style></head>
 <body>
 <h1>Heyra Flasher</h1>
@@ -179,7 +186,7 @@ document.getElementById('f').addEventListener('submit', async (e) => {{
   const log = document.getElementById('log');
   log.style.display = 'block';
   log.textContent = '';
-  const resp = await fetch('/api/flash', {{ method: 'POST', body: new FormData(e.target) }});
+  const resp = await fetch('api/flash', {{ method: 'POST', body: new FormData(e.target) }});
   const reader = resp.body.getReader();
   const decoder = new TextDecoder();
   while (true) {{
