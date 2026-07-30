@@ -1,6 +1,6 @@
 [project]
 name = "heyra"
-version = "0.2.0"
+version = "0.3.0"
 requires-python = ">=3.11,<3.12"
 dependencies = [
     "numpy==1.26.4",  # newer numpy 2.x breaks tflite-runtime's compiled ABI (predates numpy 2.0) -- verified
@@ -34,4 +34,4 @@ include = ["listener*", "app*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["listener/tests", "test_render_config.py", "test_main.py"]
+testpaths = ["listener/tests", "test_render_config.py", "test_main.py", "test_run.py"]

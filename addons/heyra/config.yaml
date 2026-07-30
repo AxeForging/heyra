@@ -1,8 +1,9 @@
 name: Heyra
-version: "0.2.0"
+version: "0.3.0"
 slug: heyra
-description: Acoustic event detection (YAMNet + openWakeWord) + USB firmware flashing for the Heyra ATOM Echo mesh, by AxeForging
+description: Smoke alarm, baby cry, glass break, and doorbell detection for Home Assistant via sound -- plus USB firmware flashing. By AxeForging.
 url: https://github.com/AxeForging/heyra
+image: ghcr.io/axeforging/heyra
 arch:
   - aarch64
   - amd64
@@ -11,6 +12,7 @@ boot: auto
 init: true
 uart: true
 host_network: true
+hassio_api: true
 ingress: true
 ingress_port: 0
 panel_icon: mdi:ear-hearing
