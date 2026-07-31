@@ -1,6 +1,6 @@
 [project]
 name = "heyra"
-version = "0.5.0"
+version = "0.5.1"
 requires-python = ">=3.11,<3.12"
 dependencies = [
     "numpy==1.26.4",  # newer numpy 2.x breaks tflite-runtime's compiled ABI (predates numpy 2.0) -- verified

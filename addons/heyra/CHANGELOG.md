@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.1
+
+Redesigned the Ingress panel -- real visual hierarchy (a proper primary
+action for flashing, status pills instead of a bare dot, panels with real
+depth) instead of three visually-identical flat cards, per this project's
+own Impeccable design context. Also fixes the Add-on Store's Info tab: the
+description card still said "USB firmware flashing" (removed in `0.4.0`)
+and never listed what Heyra actually detects; `config.yaml`'s description
+no longer collides with Supervisor's own appended "Visit Heyra page for
+more details" sentence into a visible double period.
+
 ## 0.5.0
 
 The Add-on is now the one place to set a unit's ID -- no more separately

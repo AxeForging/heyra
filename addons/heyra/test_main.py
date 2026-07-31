@@ -31,7 +31,7 @@ def test_render_units_html_empty_shows_starting_up_message():
 def test_render_units_html_shows_room_and_online_status():
     rendered = render_units_html({"1": {"room": "kitchen", "online": True, "last_packet_age_s": 1.2}})
     assert "kitchen" in rendered
-    assert "dot-online" in rendered
+    assert "pill-online" in rendered
     assert "1s ago" in rendered
 
 
@@ -78,7 +78,8 @@ def test_fetch_device_unit_id_returns_none_on_failure():
 
 
 async def test_render_discovered_html_empty_when_no_devices():
-    assert await render_discovered_html({}, [1, 2]) == ""
+    rendered = await render_discovered_html({}, [1, 2])
+    assert "No unclaimed devices found yet" in rendered
 
 
 async def test_render_discovered_html_shows_hostname_and_assign_form():

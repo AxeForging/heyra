@@ -58,10 +58,7 @@ def next_unit_id(units: dict) -> int:
 
 def render_units_html(units: dict) -> str:
     if not units:
-        return (
-            '<div class="card"><strong>Your units</strong>'
-            "<span>No units configured yet, or the listener is still starting up.</span></div>"
-        )
+        return '<div class="empty-note">No units configured yet, or the listener is still starting up.</div>'
     rows = []
     for unit_id in sorted(units, key=int):
         u = units[unit_id]
@@ -69,13 +66,15 @@ def render_units_html(units: dict) -> str:
         age = u.get("last_packet_age_s")
         age_text = f"{age:.0f}s ago" if age is not None else "never"
         rows.append(
-            '<div class="unit-row">'
-            f'<span class="dot dot-{status}"></span>'
-            f'<strong>{html.escape(str(u.get("room", "?")))}</strong>'
-            f'<span class="unit-meta">unit {html.escape(str(unit_id))} &middot; {status} &middot; last packet {age_text}</span>'
+            '<div class="row">'
+            f'<span class="pill pill-{status}">{status}</span>'
+            '<div class="row-main">'
+            f'<div class="room-name">{html.escape(str(u.get("room", "?")))}</div>'
+            f'<div class="row-meta">unit {html.escape(str(unit_id))} &middot; last packet {age_text}</div>'
+            "</div>"
             "</div>"
         )
-    return '<div class="card"><strong>Your units</strong>' + "".join(rows) + "</div>"
+    return "".join(rows)
 
 
 def fetch_device_unit_id(hostname: str) -> int | None:
@@ -91,7 +90,10 @@ def fetch_device_unit_id(hostname: str) -> int | None:
 
 async def render_discovered_html(devices: dict, configured_unit_ids: list[int]) -> str:
     if not devices:
-        return ""
+        return (
+            '<div class="empty-note">No unclaimed devices found yet. Flash one above, connect it '
+            "to your Wi-Fi, and it'll show up here.</div>"
+        )
     hostnames = sorted(devices)
     current_ids = await asyncio.gather(*(run_in_threadpool(fetch_device_unit_id, h) for h in hostnames))
     options = "".join(f'<option value="{uid}">{uid}</option>' for uid in configured_unit_ids)
@@ -99,17 +101,19 @@ async def render_discovered_html(devices: dict, configured_unit_ids: list[int]) 
     for hostname, current_id in zip(hostnames, current_ids):
         current_text = f"currently reports unit {current_id}" if current_id is not None else "not reachable yet"
         rows.append(
-            '<div class="unit-row">'
-            f'<strong>{html.escape(hostname)}</strong>'
-            f'<span class="unit-meta">{current_text}</span>'
-            f'<form method="post" action="assign" class="assign-form">'
+            '<div class="row">'
+            '<div class="row-main">'
+            f'<div class="hostname">{html.escape(hostname)}</div>'
+            f'<div class="row-meta">{current_text}</div>'
+            "</div>"
+            '<form method="post" action="assign" class="assign-form">'
             f'<input type="hidden" name="hostname" value="{html.escape(hostname)}">'
-            f'<select name="unit_id">{options}</select>'
+            f'<label class="assign-label">Unit <select name="unit_id">{options}</select></label>'
             '<button type="submit">Assign</button>'
             "</form>"
             "</div>"
         )
-    return '<div class="card"><strong>Devices found on your network</strong>' + "".join(rows) + "</div>"
+    return "".join(rows)
 
 
 async def index(request):
@@ -139,32 +143,99 @@ async def assign(request):
 STATUS_HTML = """<!doctype html>
 <html><head><meta charset="utf-8"><title>Heyra</title>
 <style>
-  :root {{ --bg: #05070a; --surface: #0a0f1a; --line: #1a2233; --text: #ffffff; --text-muted: #94a3b8; --accent: #ff3b3b; --accent-hover: #e62e2e; --online: #22c55e; }}
+  :root {{
+    --bg: #05070a; --surface: #0a0f1a; --line: #1a2233;
+    --text: #ffffff; --text-muted: #94a3b8;
+    --accent: #ff3b3b; --accent-hover: #e62e2e;
+    --online-bg: rgba(34, 197, 94, 0.14); --online-text: #4ade80;
+    --offline-bg: rgba(148, 163, 184, 0.1); --offline-text: #94a3b8;
+    --radius: 0.6rem;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  }}
   * {{ box-sizing: border-box; }}
-  body {{ font-family: "Inter", ui-sans-serif, system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 640px; margin: 3rem auto; padding: 0 1rem; }}
-  h1 {{ font-weight: 700; letter-spacing: -0.02em; }}
-  p {{ color: var(--text-muted); }}
-  a.card, div.card {{ display: block; padding: 1.1rem 1.25rem; margin-top: 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: 0.5rem; text-decoration: none; color: inherit; transition: border-color 0.15s ease; }}
-  a.card:hover {{ border-color: var(--accent); }}
-  a.card strong, div.card strong {{ display: block; margin-bottom: 0.3rem; }}
-  a.card span, div.card span {{ color: var(--text-muted); font-size: 0.9rem; }}
-  code {{ font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace; background: var(--bg); padding: 0.1rem 0.3rem; border-radius: 0.25rem; }}
-  .unit-row {{ display: flex; align-items: baseline; gap: 0.5rem; padding: 0.5rem 0; border-top: 1px solid var(--line); }}
-  .unit-row:first-of-type {{ border-top: none; margin-top: 0.6rem; }}
-  .dot {{ width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); flex: none; }}
-  .dot-online {{ background: var(--online); }}
-  .unit-meta {{ color: var(--text-muted); font-size: 0.85rem; }}
-  .assign-form {{ display: flex; align-items: center; gap: 0.4rem; margin-left: auto; }}
-  .assign-form select {{ background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 0.3rem; padding: 0.2rem 0.4rem; font-size: 0.85rem; }}
-  .assign-form button {{ background: var(--accent); color: #ffffff; border: none; border-radius: 0.3rem; padding: 0.25rem 0.6rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; }}
+  body {{
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+    max-width: 640px; margin: 0 auto; padding: 3rem 1.25rem 4rem;
+  }}
+  .kicker {{
+    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 0.6rem;
+  }}
+  h1 {{ font-size: 1.9rem; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 0.4rem; }}
+  .lede {{ color: var(--text-muted); margin: 0 0 2.25rem; line-height: 1.5; }}
+
+  .primary-action {{
+    display: block; text-decoration: none; color: inherit;
+    background: var(--accent); border-radius: var(--radius);
+    padding: 1.1rem 1.35rem;
+    box-shadow: 0 16px 32px -18px rgba(255, 59, 59, 0.45);
+    transition: background 0.15s ease, transform 0.1s ease;
+  }}
+  .primary-action:hover {{ background: var(--accent-hover); }}
+  .primary-action:active {{ transform: scale(0.99); }}
+  .primary-action strong {{ display: block; font-size: 1.05rem; margin-bottom: 0.2rem; }}
+  .primary-action span {{ color: rgba(255, 255, 255, 0.85); font-size: 0.85rem; }}
+
+  section {{ margin-top: 2.5rem; }}
+  .kicker-sm {{
+    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.85rem;
+  }}
+  .panel {{
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: 0 24px 48px -32px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+  }}
+  .empty-note {{ padding: 1.1rem 1.25rem; color: var(--text-muted); font-size: 0.9rem; }}
+
+  .row {{ display: flex; align-items: center; gap: 0.85rem; padding: 0.9rem 1.25rem; }}
+  .row + .row {{ border-top: 1px solid var(--line); }}
+  .row-main {{ flex: 1; min-width: 0; }}
+  .room-name {{ font-weight: 600; }}
+  .hostname {{ font-family: var(--mono); font-size: 0.88rem; }}
+  .row-meta {{ color: var(--text-muted); font-size: 0.82rem; margin-top: 0.15rem; }}
+
+  .pill {{
+    flex: none; font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.04em;
+    text-transform: uppercase; font-weight: 600; padding: 0.22rem 0.55rem; border-radius: 999px;
+  }}
+  .pill-online {{ background: var(--online-bg); color: var(--online-text); }}
+  .pill-offline {{ background: var(--offline-bg); color: var(--offline-text); }}
+
+  .assign-form {{ display: flex; align-items: center; gap: 0.5rem; flex: none; }}
+  .assign-label {{ font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.35rem; }}
+  .assign-form select {{
+    background: var(--bg); color: var(--text); border: 1px solid var(--line);
+    border-radius: 0.35rem; padding: 0.3rem 0.5rem; font-size: 0.85rem;
+  }}
+  .assign-form button {{
+    background: var(--accent); color: #ffffff; border: none; border-radius: 0.35rem;
+    padding: 0.35rem 0.7rem; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+  }}
   .assign-form button:hover {{ background: var(--accent-hover); }}
+
+  code {{ font-family: var(--mono); background: var(--bg); padding: 0.1rem 0.3rem; border-radius: 0.25rem; }}
 </style></head>
 <body>
-<h1>Heyra</h1>
-<p>Acoustic event detection for Home Assistant, by AxeForging.</p>
-<a class="card" href="{flash_url}" target="_blank" rel="noopener"><strong>Flash a unit</strong><span>Opens the WebSerial flashing page (a different site) -- next available unit ID: {next_unit_id}</span></a>
-{units_html}
-{discovered_html}
+  <div class="kicker">Home Assistant Add-on</div>
+  <h1>Heyra</h1>
+  <p class="lede">Acoustic event detection, by AxeForging.</p>
+
+  <a class="primary-action" href="{flash_url}" target="_blank" rel="noopener">
+    <strong>Flash a new unit &rarr;</strong>
+    <span>Opens the WebSerial flashing page &middot; next available unit ID: {next_unit_id}</span>
+  </a>
+
+  <section>
+    <div class="kicker-sm">Your units</div>
+    <div class="panel">{units_html}</div>
+  </section>
+
+  <section>
+    <div class="kicker-sm">Devices found on your network</div>
+    <div class="panel">{discovered_html}</div>
+  </section>
 </body></html>"""
 
 
