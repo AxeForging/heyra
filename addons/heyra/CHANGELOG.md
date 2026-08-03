@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.4
+
+The Ingress panel now shows a recent-events log (last 200, in memory) with
+filter (by event, by unit) and sort (newest/oldest/highest score) controls,
+plus a "Raise alarm" button per event that re-publishes it through the same
+MQTT pipeline a live detection uses. Units can now be renamed directly from
+the panel instead of the Add-on's Configuration tab, where `room` was
+effectively hidden -- renaming unpublishes the old room's MQTT discovery
+entities first (so HA doesn't accumulate stale/unavailable ones), writes the
+new room via the Supervisor options API, then restarts the Add-on (room is
+read once at listener startup, not hot-reloaded).
+
 ## 0.5.3
 
 Retheme to the AxeForge kit's `relay` flavor (external tools/hardware/browser

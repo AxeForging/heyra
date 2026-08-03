@@ -8,10 +8,12 @@ import asyncio
 import json
 import time
 
-from listener.ingest import UnitState
+from collections import deque
+
+from listener.ingest import EventRecord, UnitState
 
 
-def build_snapshot(units: dict[int, UnitState]) -> dict:
+def build_snapshot(units: dict[int, UnitState], event_log: "deque[EventRecord]" = ()) -> dict:
     now = time.monotonic()
     return {
         "status": "ok",
@@ -26,6 +28,10 @@ def build_snapshot(units: dict[int, UnitState]) -> dict:
             }
             for u in units.values()
         },
+        "events": [
+            {"unit_id": e.unit_id, "room": e.room, "event": e.event, "score": e.score, "ts": e.ts}
+            for e in event_log
+        ],
     }
 
 
@@ -51,5 +57,10 @@ async def _handle(reader: asyncio.StreamReader, writer: asyncio.StreamWriter, sn
         writer.close()
 
 
-async def start_healthz_server(units: dict[int, UnitState], host: str = "0.0.0.0", port: int = 8080) -> asyncio.AbstractServer:
-    return await asyncio.start_server(lambda r, w: _handle(r, w, lambda: build_snapshot(units)), host, port)
+async def start_healthz_server(
+    units: dict[int, UnitState],
+    event_log: "deque[EventRecord]" = (),
+    host: str = "0.0.0.0",
+    port: int = 8080,
+) -> asyncio.AbstractServer:
+    return await asyncio.start_server(lambda r, w: _handle(r, w, lambda: build_snapshot(units, event_log)), host, port)

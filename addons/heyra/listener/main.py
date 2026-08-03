@@ -13,7 +13,7 @@ from listener.config import load_config
 from listener.debug_wav import debug_wav_loop
 from listener.healthz import start_healthz_server
 from listener.hysteresis import HysteresisGate
-from listener.ingest import Hit, IngestProtocol, UnitState, health_sweep_loop
+from listener.ingest import Hit, IngestProtocol, UnitState, health_sweep_loop, new_event_log
 from listener.keywords import KeywordSpotter, keyword_unit_loop
 from listener.mqtt_out import MqttPublisher, hit_consumer_loop
 from listener.ring_buffer import RingBuffer
@@ -41,6 +41,7 @@ async def main() -> None:
     executor = ThreadPoolExecutor(max_workers=os.cpu_count() or 4)
     hit_queue: asyncio.Queue[Hit] = asyncio.Queue()
     gate = HysteresisGate(config.gate_rules)
+    event_log = new_event_log()
 
     publisher = MqttPublisher(
         config.mqtt.host, config.mqtt.port, config.mqtt.client_id, config.mqtt.discovery_prefix,
@@ -54,14 +55,14 @@ async def main() -> None:
     )
     log.info("listening for UDP audio on %s:%d", config.ingest.bind_host, config.ingest.port)
 
-    await start_healthz_server(units, port=config.healthz.port)
+    await start_healthz_server(units, event_log, port=config.healthz.port)
     log.info("healthz listening on :%d", config.healthz.port)
 
     yamnet_model = YamnetModel(config.yamnet_model_path)
     tasks = [
         asyncio.create_task(publisher.run()),
         asyncio.create_task(health_sweep_loop(units, publisher, config.ingest.offline_timeout_s)),
-        asyncio.create_task(hit_consumer_loop(hit_queue, gate, publisher, room_lookup, all_events)),
+        asyncio.create_task(hit_consumer_loop(hit_queue, gate, publisher, room_lookup, all_events, event_log)),
     ]
     for unit in units.values():
         tasks.append(asyncio.create_task(classify_unit_loop(unit, yamnet_model, executor, hit_queue, config.events)))

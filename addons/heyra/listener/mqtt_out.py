@@ -10,9 +10,11 @@ import os
 
 import aiomqtt
 
+from collections import deque
+
 from listener.config import Config, EventConfig
 from listener.hysteresis import HysteresisGate
-from listener.ingest import Hit
+from listener.ingest import EventRecord, Hit
 
 log = logging.getLogger("listener.mqtt_out")
 
@@ -114,12 +116,34 @@ class MqttPublisher:
                 await self.publish_discovery(room, event_name, cfg)
 
 
+def discovery_topics_for_room(config: Config, room: str) -> list[str]:
+    """Every discovery topic publish_all_discovery() would create for one room --
+    used by the Ingress panel's rename handler to clear a room's old entities (empty
+    retained payload) before the room name changes. Deliberately not shared code with
+    publish_all_discovery() above (that one needs full EventConfig objects to build
+    payloads; this one only needs topic strings) -- mirrors its
+    diagnostics_only/unavailable filtering, kept in sync by the same test coverage."""
+    all_events = dict(config.events)
+    unavailable = set()
+    for kw in config.keyword_spotting:
+        all_events[kw.event.name] = kw.event
+        if not kw.enabled or not os.path.exists(kw.model_path):
+            unavailable.add(kw.event.name)
+    topics = [f"{config.mqtt.discovery_prefix}/sensor/heyra_{room}_status/config"]
+    for event_name, cfg in all_events.items():
+        if cfg.diagnostics_only or event_name in unavailable:
+            continue
+        topics.append(f"{config.mqtt.discovery_prefix}/binary_sensor/heyra_{room}_{event_name}/config")
+    return topics
+
+
 async def hit_consumer_loop(
     hit_queue: asyncio.Queue[Hit],
     gate: HysteresisGate,
     publisher: MqttPublisher,
     room_lookup: dict[int, str],
     events_cfg: dict[str, EventConfig],
+    event_log: "deque[EventRecord]",
 ) -> None:
     while True:
         hit = await hit_queue.get()
@@ -130,6 +154,9 @@ async def hit_consumer_loop(
                 continue
             cfg = events_cfg[hit.event]
             payload = {"event": hit.event, "score": hit.score, "unit_id": hit.unit_id, "ts": hit.ts}
+            # Recorded for every gated hit, including diagnostics_only ones -- the
+            # Ingress panel's log is a complete picture, not just what HA sees.
+            event_log.append(EventRecord(unit_id=hit.unit_id, room=room, event=hit.event, score=hit.score, ts=hit.ts))
             if cfg.diagnostics_only:
                 await publisher.publish_diag(room, hit.event, payload)
             else:

@@ -1,10 +1,13 @@
+import asyncio
 import textwrap
 from pathlib import Path
 
 import pytest
 
 from listener.config import load_config
-from listener.mqtt_out import MqttPublisher
+from listener.hysteresis import EventRule, HysteresisGate
+from listener.ingest import Hit, new_event_log
+from listener.mqtt_out import MqttPublisher, discovery_topics_for_room, hit_consumer_loop
 
 # A real file on disk to stand in for "model present" -- model_path values in
 # the real config.yaml are container-absolute (/app/models/...), which never
@@ -58,3 +61,68 @@ async def test_discovery_skips_keyword_events_with_missing_model(tmp_path):
     assert "heyra_kitchen_distress_keyword" in published
     assert "heyra_kitchen_doorbell" in published
     assert "heyra_kitchen_help_en" not in published
+
+
+@pytest.mark.asyncio
+async def test_hit_consumer_loop_records_gated_hits_to_event_log():
+    from listener.config import EventConfig
+
+    rule = EventRule(hits=1, window_s=10, cooldown_s=0)
+    gate = HysteresisGate({(1, "baby_cry"): rule})
+    publisher = MqttPublisher("mosquitto", 1883, "test-client", "homeassistant")
+    fake_client = _FakeMqttClient()
+    publisher._client = fake_client
+    event_log = new_event_log()
+    hit_queue = asyncio.Queue()
+    events_cfg = {"baby_cry": EventConfig(
+        name="baby_cry", threshold=0.5, class_indices=(1,), rule=rule,
+        diagnostics_only=False, off_delay_s=60,
+    )}
+
+    task = asyncio.create_task(hit_consumer_loop(hit_queue, gate, publisher, {1: "kitchen"}, events_cfg, event_log))
+    await hit_queue.put(Hit(unit_id=1, event="baby_cry", score=0.9, ts=1234.5))
+    await asyncio.sleep(0.05)
+    task.cancel()
+
+    assert len(event_log) == 1
+    record = event_log[0]
+    assert (record.unit_id, record.room, record.event, record.score, record.ts) == (1, "kitchen", "baby_cry", 0.9, 1234.5)
+
+
+def test_discovery_topics_for_room_matches_publish_all_discovery(tmp_path):
+    assert REAL_MODEL_FILE.exists()
+    config_yaml = tmp_path / "config.yaml"
+    config_yaml.write_text(textwrap.dedent(f"""
+        ingest: {{port: 6969}}
+        mqtt: {{host: mosquitto, discovery_prefix: homeassistant}}
+        units:
+          - {{unit_id: 1, room: kitchen}}
+        classify:
+          model_path: /app/models/yamnet.tflite
+          class_map_path: /app/models/yamnet_class_map.csv
+          events:
+            doorbell: {{class_indices: [349, 350], threshold: 0.45, hysteresis: {{hits: 1, window_s: 1}}, cooldown_s: 60}}
+            thump: {{class_indices: [1], threshold: 0.5, diagnostics_only: true, hysteresis: {{hits: 1, window_s: 1}}, cooldown_s: 60}}
+        keyword_spotting:
+          - event_name: distress_keyword
+            model_path: {REAL_MODEL_FILE}
+            threshold: 0.9
+            hysteresis: {{hits: 2, window_s: 10}}
+            cooldown_s: 60
+          - event_name: help_en
+            model_path: /definitely/does/not/exist/help_en.tflite
+            threshold: 0.9
+            hysteresis: {{hits: 2, window_s: 10}}
+            cooldown_s: 60
+    """))
+    config = load_config(str(config_yaml))
+
+    topics = discovery_topics_for_room(config, "kitchen")
+
+    assert "homeassistant/sensor/heyra_kitchen_status/config" in topics
+    assert "homeassistant/binary_sensor/heyra_kitchen_doorbell/config" in topics
+    assert "homeassistant/binary_sensor/heyra_kitchen_distress_keyword/config" in topics
+    # diagnostics_only and missing-model events must NOT show up -- publish_all_discovery
+    # skips them too, and a rename shouldn't try to clear topics that were never published.
+    assert "homeassistant/binary_sensor/heyra_kitchen_thump/config" not in topics
+    assert "homeassistant/binary_sensor/heyra_kitchen_help_en/config" not in topics

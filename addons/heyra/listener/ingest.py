@@ -7,6 +7,7 @@ import asyncio
 import logging
 import math
 import time
+from collections import deque
 from dataclasses import dataclass, field
 
 from listener import protocol
@@ -14,6 +15,11 @@ from listener.protocol import Packet
 from listener.ring_buffer import RingBuffer
 
 log = logging.getLogger("listener.ingest")
+
+# Recent-events window for the Ingress panel's event log -- in-memory only, not a
+# permanent history store (Home Assistant's own Logbook already retains that per
+# entity). 200 is generous for a "what just happened" feed without unbounded growth.
+EVENT_LOG_MAXLEN = 200
 
 
 @dataclass
@@ -24,6 +30,22 @@ class Hit:
     event: str
     score: float
     ts: float
+
+
+@dataclass
+class EventRecord:
+    """A gated hit that actually got published (past hysteresis) -- what the Ingress
+    panel's event log shows. room is resolved once at record time so the UI never
+    needs to cross-reference unit_id -> room itself."""
+    unit_id: int
+    room: str
+    event: str
+    score: float
+    ts: float
+
+
+def new_event_log() -> deque[EventRecord]:
+    return deque(maxlen=EVENT_LOG_MAXLEN)
 
 
 @dataclass

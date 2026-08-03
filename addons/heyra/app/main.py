@@ -11,8 +11,14 @@ from __future__ import annotations
 
 import asyncio
 import html
+import json
+import os
+import re
+import time
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
+import aiomqtt
 import requests
 from starlette.applications import Starlette
 from starlette.concurrency import run_in_threadpool
@@ -20,6 +26,14 @@ from starlette.responses import HTMLResponse, RedirectResponse
 from starlette.routing import Route
 
 from app.discovery import discovery
+from listener.config import load_config
+from listener.mqtt_out import discovery_topics_for_room
+
+# Same config.yaml hit_consumer_loop/publish_all_discovery read (listener.main.CONFIG_PATH
+# isn't imported directly -- that module also imports the full YAMNet/tflite ML stack,
+# which this ingress app has no other reason to load).
+CONFIG_PATH = os.environ.get("HEYRA_CONFIG", "/app/config.yaml")
+SUPERVISOR_URL = "http://supervisor"
 
 
 @asynccontextmanager
@@ -48,6 +62,100 @@ def fetch_unit_snapshot() -> dict:
         return {}
 
 
+def sanitize_room(raw: str) -> str:
+    """Lowercase, [a-z0-9_] only -- a room name flows straight into an MQTT topic
+    segment (acoustic/{room}/event) and an HA entity unique_id (heyra_{room}_{event}),
+    same alphabet every room name in this repo already uses (kitchen, living_room)."""
+    return re.sub(r"[^a-z0-9]+", "_", raw.strip().lower()).strip("_")
+
+
+def _supervisor_headers() -> dict[str, str] | None:
+    token = os.environ.get("SUPERVISOR_TOKEN")
+    if not token:
+        return None
+    return {"Authorization": f"Bearer {token}"}
+
+
+async def _mqtt_publish_once(topic_payloads: list[tuple[str, str | bytes, bool]]) -> None:
+    """Opens a short-lived MQTT connection, publishes each (topic, payload, retain),
+    closes. Best-effort -- callers already treat MQTT unavailability as non-fatal, same
+    as /assign's own device-unreachable handling."""
+    config = load_config(CONFIG_PATH)
+    async with aiomqtt.Client(
+        config.mqtt.host, config.mqtt.port,
+        username=config.mqtt.username, password=config.mqtt.password,
+    ) as client:
+        for topic, payload, retain in topic_payloads:
+            await client.publish(topic, payload, retain=retain)
+
+
+def filter_sort_events(events: list[dict], event_filter: str, unit_filter: str, order: str) -> list[dict]:
+    filtered = events
+    if event_filter and event_filter != "all":
+        filtered = [e for e in filtered if e["event"] == event_filter]
+    if unit_filter and unit_filter != "all":
+        filtered = [e for e in filtered if str(e["unit_id"]) == unit_filter]
+    if order == "oldest":
+        return sorted(filtered, key=lambda e: e["ts"])
+    if order == "score":
+        return sorted(filtered, key=lambda e: e["score"], reverse=True)
+    return sorted(filtered, key=lambda e: e["ts"], reverse=True)  # "newest", also the default
+
+
+def render_events_html(events: list[dict], units: dict, query: dict) -> str:
+    selected_event = query.get("event", "all")
+    selected_unit = query.get("unit", "all")
+    selected_order = query.get("order", "newest")
+
+    event_names = sorted({e["event"] for e in events})
+    event_options = '<option value="all">All events</option>' + "".join(
+        f'<option value="{html.escape(n)}"{" selected" if n == selected_event else ""}>{html.escape(n)}</option>'
+        for n in event_names
+    )
+    unit_options = '<option value="all">All units</option>' + "".join(
+        f'<option value="{html.escape(uid)}"{" selected" if uid == selected_unit else ""}>'
+        f'{html.escape(str(u.get("room", uid)))}</option>'
+        for uid, u in sorted(units.items(), key=lambda kv: int(kv[0]))
+    )
+    order_options = "".join(
+        f'<option value="{val}"{" selected" if val == selected_order else ""}>{label}</option>'
+        for val, label in (("newest", "Newest first"), ("oldest", "Oldest first"), ("score", "Highest score"))
+    )
+    form = (
+        '<form method="get" class="filter-form">'
+        f'<select name="event">{event_options}</select>'
+        f'<select name="unit">{unit_options}</select>'
+        f'<select name="order">{order_options}</select>'
+        '<button type="submit">Apply</button>'
+        "</form>"
+    )
+
+    filtered = filter_sort_events(events, selected_event, selected_unit, selected_order)
+    if not filtered:
+        note = "No events yet" if not events else "No events match this filter"
+        return form + f'<div class="empty-note">{note} -- once a detector fires, it shows up here.</div>'
+
+    rows = []
+    for e in filtered:
+        when = datetime.fromtimestamp(e["ts"], tz=timezone.utc).strftime("%H:%M:%S")
+        rows.append(
+            '<div class="row">'
+            '<div class="row-main">'
+            f'<div class="room-name">{html.escape(str(e["event"]))}</div>'
+            f'<div class="row-meta">{html.escape(str(e.get("room", "?")))} &middot; {when} UTC '
+            f'&middot; score {e["score"]:.2f}</div>'
+            "</div>"
+            '<form method="post" action="reraise" class="assign-form">'
+            f'<input type="hidden" name="unit_id" value="{html.escape(str(e["unit_id"]))}">'
+            f'<input type="hidden" name="event" value="{html.escape(str(e["event"]))}">'
+            f'<input type="hidden" name="score" value="{e["score"]}">'
+            '<button type="submit">Raise alarm</button>'
+            "</form>"
+            "</div>"
+        )
+    return form + '<div class="panel">' + "".join(rows) + "</div>"
+
+
 def next_unit_id(units: dict) -> int:
     used = {int(uid) for uid in units}
     candidate = 1
@@ -72,6 +180,12 @@ def render_units_html(units: dict) -> str:
             f'<div class="room-name">{html.escape(str(u.get("room", "?")))}</div>'
             f'<div class="row-meta">unit {html.escape(str(unit_id))} &middot; last packet {age_text}</div>'
             "</div>"
+            '<form method="post" action="rename" class="assign-form">'
+            f'<input type="hidden" name="unit_id" value="{html.escape(str(unit_id))}">'
+            f'<input type="text" name="room" value="{html.escape(str(u.get("room", "")))}" '
+            'class="rename-input" placeholder="room name">'
+            '<button type="submit">Rename</button>'
+            "</form>"
             "</div>"
         )
     return "".join(rows)
@@ -119,9 +233,11 @@ async def render_discovered_html(devices: dict, configured_unit_ids: list[int]) 
 async def index(request):
     snapshot = await run_in_threadpool(fetch_unit_snapshot)
     units = snapshot.get("units", {})
+    events = snapshot.get("events", [])
     discovered_html = await render_discovered_html(dict(discovery.devices), sorted(int(u) for u in units))
     return HTMLResponse(STATUS_HTML.format(
         units_html=render_units_html(units),
+        events_html=render_events_html(events, units, request.query_params),
         discovered_html=discovered_html,
         next_unit_id=next_unit_id(units),
         flash_url=FLASH_URL,
@@ -140,6 +256,89 @@ async def assign(request):
     # Relative, not "/" -- an absolute path drops HA Ingress's path prefix and navigates
     # the panel's iframe to the domain root, which re-loads the whole HA frontend (sidebar
     # included) inside itself. Same class of bug already fixed for /flash, see bd4a684.
+    return RedirectResponse(url=".", status_code=303)
+
+
+async def reraise(request):
+    """Re-publishes a past event's MQTT payload with a fresh timestamp -- fires
+    whatever HA automation is already wired to it. Not the physical play_alert tone:
+    that's an ESPHome api: action, only callable via a Home Assistant service call,
+    and the ESPHome integration isn't set up yet (see CLAUDE.md)."""
+    form = await request.form()
+    unit_id = form.get("unit_id", "")
+    event_name = form.get("event", "")
+    score = form.get("score", "")
+    room = None
+    if unit_id and event_name:
+        snapshot = await run_in_threadpool(fetch_unit_snapshot)
+        unit = snapshot.get("units", {}).get(unit_id)
+        room = unit.get("room") if unit else None
+    if room:
+        try:
+            payload = json.dumps({
+                "event": event_name,
+                "score": float(score) if score else 0.0,
+                "unit_id": int(unit_id),
+                "ts": time.time(),
+            })
+            await _mqtt_publish_once([(f"acoustic/{room}/event", payload, False)])
+        except Exception:
+            pass  # best-effort, mirrors /assign's own error handling
+    return RedirectResponse(url=".", status_code=303)
+
+
+async def rename(request):
+    """Renames a unit's room from the panel instead of the Add-on's Configuration tab.
+    Unpublishes the old room's MQTT discovery entities first (so they don't linger as
+    unavailable in HA), writes the new room via the Supervisor API, then restarts the
+    Add-on -- room is read once at listener startup, not hot-reloaded."""
+    form = await request.form()
+    unit_id_raw = form.get("unit_id", "")
+    new_room = sanitize_room(form.get("room", ""))
+    headers = _supervisor_headers()
+
+    if unit_id_raw and new_room and headers is not None:
+        try:
+            info_resp = await run_in_threadpool(
+                lambda: requests.get(f"{SUPERVISOR_URL}/addons/self/info", headers=headers, timeout=5)
+            )
+            info_resp.raise_for_status()
+            options = info_resp.json()["data"]["options"]
+            unit_entries = options.get("units", [])
+            target = next((u for u in unit_entries if str(u.get("unit_id")) == str(unit_id_raw)), None)
+            other_rooms = {u.get("room") for u in unit_entries if u is not target}
+
+            if target is not None and target.get("room") != new_room and new_room not in other_rooms:
+                old_room = target["room"]
+                try:
+                    config = load_config(CONFIG_PATH)
+                    topics = discovery_topics_for_room(config, old_room)
+                    await _mqtt_publish_once([(t, b"", True) for t in topics])
+                except Exception:
+                    pass  # best-effort -- still proceed with the rename itself
+
+                target["room"] = new_room
+                await run_in_threadpool(
+                    lambda: requests.post(
+                        f"{SUPERVISOR_URL}/addons/self/options", headers=headers,
+                        json={"options": options}, timeout=10,
+                    )
+                )
+
+                async def _restart_soon():
+                    # Give this response time to actually flush to the browser before
+                    # the container (and this uvicorn process) restarts.
+                    await asyncio.sleep(1)
+                    try:
+                        await run_in_threadpool(
+                            lambda: requests.post(f"{SUPERVISOR_URL}/addons/self/restart", headers=headers, timeout=10)
+                        )
+                    except Exception:
+                        pass
+
+                asyncio.create_task(_restart_soon())
+        except Exception:
+            pass  # best-effort -- collision/unreachable-Supervisor cases just no-op
     return RedirectResponse(url=".", status_code=303)
 
 
@@ -217,6 +416,24 @@ STATUS_HTML = """<!doctype html>
     padding: 0.35rem 0.7rem; font-size: 0.82rem; font-weight: 600; cursor: pointer;
   }}
   .assign-form button:hover {{ background: var(--accent-hover); }}
+  .rename-input {{
+    background: var(--bg); color: var(--text); border: 1px solid var(--line);
+    border-radius: 0.35rem; padding: 0.3rem 0.5rem; font-size: 0.85rem; width: 8rem;
+  }}
+  .hint {{ color: var(--text-muted); font-size: 0.78rem; margin: 0.6rem 0 0; }}
+
+  .filter-form {{
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.85rem;
+  }}
+  .filter-form select {{
+    background: var(--surface); color: var(--text); border: 1px solid var(--line);
+    border-radius: 0.35rem; padding: 0.3rem 0.5rem; font-size: 0.85rem;
+  }}
+  .filter-form button {{
+    background: var(--surface); color: var(--text); border: 1px solid var(--line);
+    border-radius: 0.35rem; padding: 0.3rem 0.7rem; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+  }}
+  .filter-form button:hover {{ border-color: color-mix(in srgb, var(--accent) 50%, transparent); }}
 
   code {{ font-family: var(--mono); background: var(--bg); padding: 0.1rem 0.3rem; border-radius: 0.25rem; }}
 </style></head>
@@ -233,6 +450,15 @@ STATUS_HTML = """<!doctype html>
   <section>
     <h2 class="kicker-sm">Your units</h2>
     <div class="panel">{units_html}</div>
+    <p class="hint">Renaming restarts the Add-on (a few seconds of downtime).</p>
+  </section>
+
+  <section>
+    <h2 class="kicker-sm">Recent events</h2>
+    {events_html}
+    <p class="hint">Last 200 events, in memory -- for permanent history, see Home
+      Assistant's own Logbook for each entity. "Raise alarm" re-publishes the event now,
+      through the same pipeline a live detection uses.</p>
   </section>
 
   <section>
@@ -246,6 +472,8 @@ app = Starlette(
     routes=[
         Route("/", index),
         Route("/assign", assign, methods=["POST"]),
+        Route("/reraise", reraise, methods=["POST"]),
+        Route("/rename", rename, methods=["POST"]),
     ],
     lifespan=lifespan,
 )
