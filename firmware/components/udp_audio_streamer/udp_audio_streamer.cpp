@@ -4,6 +4,9 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
 #include "esphome/core/hal.h"
 #include "esphome/core/log.h"
 
@@ -16,6 +19,10 @@ static const char *const TAG = "udp_audio_streamer";
 namespace {
 // server_host_ can be a literal IP or an mDNS ".local" hostname -- set_sockaddr() below
 // only accepts a literal IP (inet_pton internally), so this resolves once, up front.
+// Blocking (getaddrinfo) -- callers MUST run this off the main/App task (see
+// UDPAudioStreamer::resolve_task_). A boot-time mDNS lookup can take far longer than
+// ESPHome's 5s task-watchdog window if the network isn't up yet, and running it inline in
+// setup() used to crash the device (task_wdt trigger -> reboot -> ESPHome safe mode).
 bool resolve_host_(const std::string &host, std::string *out_ip) {
   struct addrinfo hints {};
   hints.ai_family = AF_INET;
@@ -33,6 +40,22 @@ bool resolve_host_(const std::string &host, std::string *out_ip) {
 }
 }  // namespace
 
+// Runs on its own FreeRTOS task (spawned by setup()), never on the watchdog-monitored
+// main/App task. Retries forever, however long DNS/mDNS takes, then publishes the result
+// via server_resolved_ (std::atomic -- also what makes the dest_addr_ write below visible
+// to the mic task in send_packet_()) and deletes itself.
+void UDPAudioStreamer::resolve_task_(void *arg) {
+  auto *self = static_cast<UDPAudioStreamer *>(arg);
+  std::string ip;
+  while (!resolve_host_(self->server_host_, &ip)) {
+    vTaskDelay(pdMS_TO_TICKS(2000));
+  }
+  socket::set_sockaddr(&self->dest_addr_, sizeof(self->dest_addr_), ip.c_str(), self->server_port_);
+  ESP_LOGI(TAG, "Resolved server host '%s' -> %s", self->server_host_.c_str(), ip.c_str());
+  self->server_resolved_.store(true);
+  vTaskDelete(nullptr);
+}
+
 void UDPAudioStreamer::setup() {
   socket_ = socket::socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
   if (socket_ == nullptr) {
@@ -42,25 +65,9 @@ void UDPAudioStreamer::setup() {
   }
   socket_->setblocking(false);
 
-  std::string resolved_ip;
-  if (resolve_host_(server_host_, &resolved_ip)) {
-    socket::set_sockaddr(&dest_addr_, sizeof(dest_addr_), resolved_ip.c_str(), server_port_);
-    server_resolved_ = true;
-    ESP_LOGI(TAG, "Resolved server host '%s' -> %s", server_host_.c_str(), resolved_ip.c_str());
-  } else {
-    // A DNS/mDNS lookup this early can race the network coming up -- retry on an interval
-    // rather than failing setup() outright.
-    ESP_LOGW(TAG, "Could not resolve server host '%s' yet, retrying", server_host_.c_str());
-    this->set_interval("resolve_server_host", 2000, [this]() {
-      std::string ip;
-      if (resolve_host_(server_host_, &ip)) {
-        socket::set_sockaddr(&dest_addr_, sizeof(dest_addr_), ip.c_str(), server_port_);
-        server_resolved_ = true;
-        ESP_LOGI(TAG, "Resolved server host '%s' -> %s", server_host_.c_str(), ip.c_str());
-        this->cancel_interval("resolve_server_host");
-      }
-    });
-  }
+  // Small stack (mDNS/DNS resolution + a std::string, no audio processing), low priority
+  // -- this task only exists to keep a blocking network call off the main App task.
+  xTaskCreate(&UDPAudioStreamer::resolve_task_, "heyra_resolve", 4096, this, 1, nullptr);
 
   mic_->add_data_callback([this](const std::vector<uint8_t> &data) { this->on_mic_data_(data); });
   // Mic runs continuously -- Goertzel needs it regardless of the streaming switch's state.

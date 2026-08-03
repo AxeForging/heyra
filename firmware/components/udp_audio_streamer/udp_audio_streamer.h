@@ -27,8 +27,8 @@ class UDPAudioStreamer : public Component {
   // Called at boot from on_boot: (restored value) and live from the Unit ID number
   // entity's set_action -- no longer a compile-time constant, see __init__.py.
   void set_unit_id(uint8_t id) { unit_id_ = id; }
-  // Literal IP or an mDNS ".local" hostname -- resolved to a literal IP once in setup(),
-  // see resolve_host_() in the .cpp.
+  // Literal IP or an mDNS ".local" hostname -- resolved to a literal IP by resolve_task_
+  // (a background FreeRTOS task spawned from setup(), see the .cpp).
   void set_server_host(const std::string &host) { server_host_ = host; }
   void set_server_port(uint16_t port) { server_port_ = port; }
   void set_microphone(microphone::Microphone *mic) { mic_ = mic; }
@@ -49,6 +49,10 @@ class UDPAudioStreamer : public Component {
   void on_mic_data_(const std::vector<uint8_t> &data);
   void send_packet_(size_t payload_len, uint8_t flags);
   void tick_alert_();
+  // *** Runs on its own dedicated FreeRTOS task (spawned by setup()), NOT the main loop
+  // task -- see the .cpp. Static (FreeRTOS task functions are C-style function pointers,
+  // not member functions); `arg` is the owning UDPAudioStreamer*.
+  static void resolve_task_(void *arg);
 
   microphone::Microphone *mic_{nullptr};
   speaker::Speaker *speaker_{nullptr};
@@ -57,10 +61,12 @@ class UDPAudioStreamer : public Component {
   uint16_t server_port_{0};
   std::unique_ptr<socket::Socket> socket_;
   struct sockaddr dest_addr_ {};
-  // False until server_host_ resolves -- send_packet_() no-ops until then. A boot-time
-  // DNS/mDNS race against the network coming up is expected, not a hard failure; setup()
-  // retries on an interval until this flips true.
-  bool server_resolved_{false};
+  // False until server_host_ resolves -- send_packet_() no-ops until then. A background
+  // FreeRTOS task (spawned in setup(), see resolve_task_ in the .cpp) retries the
+  // blocking DNS/mDNS lookup until it succeeds; dest_addr_ is written by that task before
+  // this flips true, so this atomic is also what publishes dest_addr_ across threads
+  // (read from the mic task in send_packet_()).
+  std::atomic<bool> server_resolved_{false};
 
   std::atomic<bool> streaming_enabled_{true};
   std::atomic<bool> smoke_alarm_detected_{false};
