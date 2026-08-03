@@ -182,8 +182,8 @@ STATUS_HTML = """<!doctype html>
 
   section {{ margin-top: 2.5rem; }}
   .kicker-sm {{
-    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em;
-    text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.85rem;
+    font-family: var(--mono); font-size: 0.72rem; font-weight: 400; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-muted); margin: 0 0 0.85rem;
   }}
   .panel {{
     background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
@@ -192,7 +192,7 @@ STATUS_HTML = """<!doctype html>
   }}
   .empty-note {{ padding: 1.1rem 1.25rem; color: var(--text-muted); font-size: 0.9rem; }}
 
-  .row {{ display: flex; align-items: center; gap: 0.85rem; padding: 0.9rem 1.25rem; }}
+  .row {{ display: flex; flex-wrap: wrap; align-items: center; gap: 0.85rem; padding: 0.9rem 1.25rem; }}
   .row + .row {{ border-top: 1px solid var(--line); }}
   .row-main {{ flex: 1; min-width: 0; }}
   .room-name {{ font-weight: 600; }}
@@ -231,12 +231,12 @@ STATUS_HTML = """<!doctype html>
   </a>
 
   <section>
-    <div class="kicker-sm">Your units</div>
+    <h2 class="kicker-sm">Your units</h2>
     <div class="panel">{units_html}</div>
   </section>
 
   <section>
-    <div class="kicker-sm">Devices found on your network</div>
+    <h2 class="kicker-sm">Devices found on your network</h2>
     <div class="panel">{discovered_html}</div>
   </section>
 </body></html>"""
