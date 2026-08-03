@@ -4,12 +4,23 @@ from unittest.mock import Mock, patch
 from app.main import (
     FLASH_URL,
     STATUS_HTML,
+    assign,
     fetch_device_unit_id,
     fetch_unit_snapshot,
     next_unit_id,
     render_discovered_html,
     render_units_html,
 )
+
+
+class _FakeRequest:
+    """Just enough of Starlette's Request to drive assign() without a real ASGI call."""
+
+    def __init__(self, form_data):
+        self._form_data = form_data
+
+    async def form(self):
+        return self._form_data
 
 
 def test_next_unit_id_starts_at_one_when_no_units_configured():
@@ -97,3 +108,13 @@ async def test_render_discovered_html_shows_not_reachable_on_failure():
     with patch("app.main.requests.get", side_effect=ConnectionError("not up yet")):
         rendered = await render_discovered_html({"heyra-atom-echo-a1b2c3.local": object()}, [1])
     assert "not reachable yet" in rendered
+
+
+async def test_assign_redirects_relative_not_absolute():
+    # A "/" redirect drops HA Ingress's path prefix and re-loads the whole HA frontend
+    # (sidebar included) inside the panel's own iframe -- already happened once for
+    # /flash (bd4a684). Pin this down so it can't silently regress here too.
+    with patch("app.main.requests.post"):
+        response = await assign(_FakeRequest({"hostname": "heyra-atom-echo-a1b2c3.local", "unit_id": "1"}))
+    assert response.status_code == 303
+    assert response.headers["location"] == "."

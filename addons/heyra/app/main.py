@@ -137,7 +137,10 @@ async def assign(request):
             requests.post(f"http://{hostname}/number/unit_id_number/set", params={"value": unit_id}, timeout=5)
         except Exception:
             pass  # best-effort -- the device list will just keep showing its prior state
-    return RedirectResponse(url="/", status_code=303)
+    # Relative, not "/" -- an absolute path drops HA Ingress's path prefix and navigates
+    # the panel's iframe to the domain root, which re-loads the whole HA frontend (sidebar
+    # included) inside itself. Same class of bug already fixed for /flash, see bd4a684.
+    return RedirectResponse(url=".", status_code=303)
 
 
 STATUS_HTML = """<!doctype html>
