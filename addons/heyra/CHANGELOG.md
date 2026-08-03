@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.2
+
+Fixes a real bug on Assign: same class as the 0.3.1 `/flash` 404 -- the
+`/assign` route's redirect used an absolute `"/"` `Location` header, which
+drops HA Ingress's path prefix. After hitting Assign, the panel's own
+iframe navigated to the domain root and re-loaded the whole HA frontend
+(sidebar included) inside itself, worse on every refresh since each one
+nested another copy. Redirect is now relative to the request.
+
 ## 0.5.1
 
 Redesigned the Ingress panel -- real visual hierarchy (a proper primary
