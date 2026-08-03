@@ -7,12 +7,14 @@
      (the @theme inline block maps tokens to axe-* utilities)
    - Plain CSS / no Tailwind: just link it; browsers ignore @theme.
 
-   Flavors (set on <html>): forge (default) | circuit | flux | signal
+   Flavors (set on <html>): forge (default) | circuit | flux | relay | signal
    ============================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* ---- Shell tokens: identical in every flavor. Never override. ---- */
+/* ---- Shell tokens: identical in every flavor except relay. Never override
+   otherwise -- relay's neutral-gray shell is a deliberate, one-time exception
+   (see the "new flavor discussion" note below), not a precedent for others. ---- */
 :root {
   color-scheme: dark;
 
@@ -45,6 +47,23 @@
 [data-flavor="flux"] {
   --af-accent: #a78bfa;
   --af-accent-hover: #8b5cf6;
+  --af-accent-contrast: #05070a;
+}
+
+/* relay: the one flavor that also overrides shell tokens (bg/surface/-2/-3/line),
+   not just the 3 accent vars -- "external tools/hardware/products" (Heyra, rsvp-m5,
+   ReplayRaccoon), inheriting ReplayRaccoon's neutral-gray shell instead of the
+   default blue-black. This is the "new flavor discussion" the Do/Don't section
+   below refers to, made real -- a deliberate one-time exception, not a precedent. */
+[data-flavor="relay"] {
+  --af-bg: #0a0a0a;
+  --af-surface: #1a1a1a;
+  --af-surface-2: #161616; /* terminal body */
+  --af-surface-3: #202020; /* terminal header */
+  --af-line: #2a2a2a;
+
+  --af-accent: #ff6b00;
+  --af-accent-hover: #e56000;
   --af-accent-contrast: #05070a;
 }
 

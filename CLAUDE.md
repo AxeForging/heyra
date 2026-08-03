@@ -110,7 +110,9 @@
     `logo.png` are done — icons rasterized from the real AxeForging brand kit
     (`~/workspace/axeforging/branding/logo.svg`/`wordmark.svg`) via ImageMagick, with a
     Heyra-specific accent color (`#ff3b3b`) substituted for the kit's default forge-orange,
-    same "one custom accent per project" pattern as `rsvp-m5`'s own terracotta.
+    same "one custom accent per project" pattern as `rsvp-m5`'s own terracotta. **Superseded**
+    — see the `relay` flavor rollout below; both this and rsvp-m5's terracotta were the
+    "new flavor discussion" the kit's own README called for, now resolved.
   - GitHub Pages landing site added: `web/index.html` (AxeForge brand kit + a Heyra-specific
     accent, `#ff3b3b`) deployed via `.github/workflows/pages.yml`, mirroring the real
     `AxeForging/rsvp-m5` Pages pattern (`configure-pages`/`upload-pages-artifact`/

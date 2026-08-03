@@ -147,9 +147,9 @@ STATUS_HTML = """<!doctype html>
 <html><head><meta charset="utf-8"><title>Heyra</title>
 <style>
   :root {{
-    --bg: #05070a; --surface: #0a0f1a; --line: #1a2233;
+    --bg: #0a0a0a; --surface: #1a1a1a; --line: #2a2a2a;
     --text: #ffffff; --text-muted: #94a3b8;
-    --accent: #ff3b3b; --accent-hover: #e62e2e;
+    --accent: #ff6b00; --accent-hover: #e56000; --accent-contrast: #05070a;
     --online-bg: rgba(34, 197, 94, 0.14); --online-text: #4ade80;
     --offline-bg: rgba(148, 163, 184, 0.1); --offline-text: #94a3b8;
     --radius: 0.6rem;
@@ -169,16 +169,16 @@ STATUS_HTML = """<!doctype html>
   .lede {{ color: var(--text-muted); margin: 0 0 2.25rem; line-height: 1.5; }}
 
   .primary-action {{
-    display: block; text-decoration: none; color: inherit;
+    display: block; text-decoration: none; color: var(--accent-contrast);
     background: var(--accent); border-radius: var(--radius);
     padding: 1.1rem 1.35rem;
-    box-shadow: 0 16px 32px -18px rgba(255, 59, 59, 0.45);
+    box-shadow: 0 16px 32px -18px rgba(255, 107, 0, 0.45);
     transition: background 0.15s ease, transform 0.1s ease;
   }}
   .primary-action:hover {{ background: var(--accent-hover); }}
   .primary-action:active {{ transform: scale(0.99); }}
   .primary-action strong {{ display: block; font-size: 1.05rem; margin-bottom: 0.2rem; }}
-  .primary-action span {{ color: rgba(255, 255, 255, 0.85); font-size: 0.85rem; }}
+  .primary-action span {{ color: color-mix(in srgb, var(--accent-contrast) 85%, transparent); font-size: 0.85rem; }}
 
   section {{ margin-top: 2.5rem; }}
   .kicker-sm {{
@@ -213,7 +213,7 @@ STATUS_HTML = """<!doctype html>
     border-radius: 0.35rem; padding: 0.3rem 0.5rem; font-size: 0.85rem;
   }}
   .assign-form button {{
-    background: var(--accent); color: #ffffff; border: none; border-radius: 0.35rem;
+    background: var(--accent); color: var(--accent-contrast); border: none; border-radius: 0.35rem;
     padding: 0.35rem 0.7rem; font-size: 0.82rem; font-weight: 600; cursor: pointer;
   }}
   .assign-form button:hover {{ background: var(--accent-hover); }}

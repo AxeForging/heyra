@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.3
+
+Retheme to the AxeForge kit's `relay` flavor (external tools/hardware/browser
+extensions -- shared with sibling projects rsvp-m5 and ReplayRaccoon), replacing
+the one-off `#ff3b3b` accent that lived outside the kit's sanctioned mechanism.
+Ingress panel, landing page, flash page, and Store card art (icon.png/logo.png)
+all move to the new `#ff6b00` accent + neutral-gray shell.
+
 ## 0.5.2
 
 Fixes a real bug on Assign: same class as the 0.3.1 `/flash` 404 -- the

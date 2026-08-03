@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="AxeForge">
   <g transform="translate(2 4)">
     <path d="M16 5 V24.5" stroke="var(--af-text, #ffffff)" stroke-width="3.5"/>
-    <path fill="var(--af-accent, #ff3b3b)" d="M16 10 L7 4 A8.5 8.5 0 0 0 7 16 Z"/>
-    <path fill="var(--af-accent, #ff3b3b)" d="M16 10 L25 4 A8.5 8.5 0 0 1 25 16 Z"/>
-    <rect x="14.25" y="26.5" width="3.5" height="3.5" fill="var(--af-accent, #ff3b3b)"/>
+    <path fill="var(--af-accent, #ff6b00)" d="M16 10 L7 4 A8.5 8.5 0 0 0 7 16 Z"/>
+    <path fill="var(--af-accent, #ff6b00)" d="M16 10 L25 4 A8.5 8.5 0 0 1 25 16 Z"/>
+    <rect x="14.25" y="26.5" width="3.5" height="3.5" fill="var(--af-accent, #ff6b00)"/>
   </g>
-  <text x="44" y="27" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="700" fill="var(--af-text, #ffffff)">Axe<tspan fill="var(--af-accent, #ff3b3b)">Forge</tspan></text>
+  <text x="44" y="27" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="700" fill="var(--af-text, #ffffff)">Axe<tspan fill="var(--af-accent, #ff6b00)">Forge</tspan></text>
 </svg>
