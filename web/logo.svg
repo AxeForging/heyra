@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="AxeForge">
-  <!-- handle -->
-  <path d="M16 5 V24.5" stroke="var(--af-text, #ffffff)" stroke-width="3.5"/>
-  <!-- double-bit blades; follow the flavor accent when the kit CSS is loaded -->
-  <path fill="var(--af-accent, #ff6b00)" d="M16 10 L7 4 A8.5 8.5 0 0 0 7 16 Z"/>
-  <path fill="var(--af-accent, #ff6b00)" d="M16 10 L25 4 A8.5 8.5 0 0 1 25 16 Z"/>
-  <!-- terminal cursor -->
-  <rect x="14.25" y="26.5" width="3.5" height="3.5" fill="var(--af-accent, #ff6b00)"/>
-</svg>
