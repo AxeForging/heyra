@@ -1,0 +1,27 @@
+# Heyra
+
+> Acoustic event detection mesh for Home Assistant — cheap ESP32 units stream raw audio to a server that classifies it and publishes events over MQTT.
+
+Heyra is a "dumb edge, smart server" acoustic event detection system built by AxeForging. Cheap ESP32 units (M5Stack ATOM Echo today, more boards welcome) stream raw audio to a server running YAMNet + openWakeWord, which publishes detections to Home Assistant over MQTT — baby crying, a smoke alarm going off, glass breaking, a dog barking, someone at the door, shouting, and screaming. The smoke-alarm detector also runs entirely on-device, so it keeps working if the server or network goes down.
+
+## What it does
+
+- **Baby cry**, **smoke alarm** (dual-path: on-device + server, survives an outage), **glass break**, **dog bark**, **doorbell**, **shout**, **scream** — classified via YAMNet, no network round-trip needed for the smoke alarm
+- **Wake-word slots** for "help" (English) and "socorro" (Portuguese) — the pipeline is wired end-to-end; real trained models are the next step
+- **MQTT Discovery** — entities show up in Home Assistant automatically, no manual YAML
+- **Privacy-first** — no audio persisted anywhere outside an explicit opt-in debug mode; raw PCM never leaves the LAN
+- Any number of units — not capped at a fixed fleet size
+
+## How it's installed
+
+Installed as a Home Assistant Add-on: add the `https://github.com/AxeForging/heyra` repository under Settings → Add-ons → Add-on Store, then install the Heyra Add-on, which runs the detection service and gives a live view of configured units. Each ATOM Echo is flashed straight from the browser via WebSerial at the hosted flasher page — no dev machine or CLI needed.
+
+## Compatible hardware
+
+Currently verified against the M5Stack ATOM Echo, in production use. Built to add more boards — see `firmware/boards/README.md` in the repository for the hardware contract a new board profile needs to satisfy.
+
+## Contact & links
+
+- Repository: https://github.com/AxeForging/heyra
+- Website: https://axeforging.github.io/heyra/
+- License: MIT
