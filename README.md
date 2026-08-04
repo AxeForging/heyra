@@ -69,9 +69,8 @@ Full architecture and status: [`CLAUDE.md`](CLAUDE.md).
 
 ## From AxeForging
 
-Built by [Murilo Machado](https://github.com/murilopmachado) and the
-[AxeForging](https://github.com/AxeForging) team. Check out our other
-tools at [tools.axeforge.io](https://tools.axeforge.io).
+Built by the [AxeForging](https://github.com/AxeForging) team. Check out
+our other tools at [tools.axeforge.io](https://tools.axeforge.io).
 
 ## License
 
